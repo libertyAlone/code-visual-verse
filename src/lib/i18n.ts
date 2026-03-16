@@ -9,7 +9,9 @@ const resources = {
       "app.subtitle": "Quantum Engine Online",
       "app.scan": "Import Project",
       "app.onlySrc": "Restrict to src directory",
-      "app.emptyPrompt": "Select a galaxy or planet in the cosmic field to begin telemetry.",
+      "app.importing": "Initializing Scan",
+      "app.emptyPrompt":
+        "Select a galaxy or planet in the cosmic field to begin telemetry.",
       "node.systemCore": "System Core",
       "node.planetaryCore": "Planetary Core",
       "node.starSystem": "Star System",
@@ -33,7 +35,13 @@ const resources = {
       "app.sync": "Sync Status",
       "app.celestials": "FILES",
       "detail.deepScan": "Analysis",
-      "detail.depart": "Back to View",
+      "detail.back": "Back to View",
+      "detail.close": "Close",
+      "detail.status": "Operational",
+      "detail.protocol_label": "Visual Verse Protocol",
+      "detail.system_status": "System Status",
+      "welcome.guide_ready": "GUIDE READY",
+      "sidebar.filter_desc": "Filter primary source artifacts only",
       "detail.celestialIntel": "Node Information",
       "detail.protocol": "Source File",
       "detail.level": "Tier {{level}}",
@@ -54,16 +62,25 @@ const resources = {
       "app.returnHome": "Center View",
       "app.syncTime": "SYSTEM v1.0.4",
       "app.welcome.title": "Code Visual Verse",
-      "app.welcome.subtitle": "Transform your code into a navigable 3D universe",
-      "app.welcome.import_guide": "Select a project folder to start visualization",
-      "app.welcome.feature.mapping": "3D Architecture: Explore directories and files as planetary systems",
-      "app.welcome.feature.telemetry": "Code Insights: View complexity, dependencies, and git history",
-      "app.welcome.feature.navigation": "Deep Navigation: Smoothly traverse through project levels",
+      "app.welcome.subtitle":
+        "Transform your code into a navigable 3D universe",
+      "app.welcome.import_guide":
+        "Select a project folder to start visualization",
+      "app.welcome.feature.mapping":
+        "3D Architecture: Explore directories and files as planetary systems",
+      "app.welcome.feature.telemetry":
+        "Code Insights: View complexity, dependencies, and git history",
+      "app.welcome.feature.navigation":
+        "Deep Navigation: Smoothly traverse through project levels",
       "app.welcome.controls.title": "Navigation Guide",
       "app.welcome.controls.rotate": "Rotate",
       "app.welcome.controls.pan": "Move",
       "app.welcome.controls.zoom": "Zoom",
       "app.welcome.controls.select": "Select",
+      "welcome.controls.rotate_key": "Left Drag",
+      "welcome.controls.pan_key": "Right Drag",
+      "welcome.controls.zoom_key": "Scroll",
+      "welcome.controls.select_key": "Click",
       "detail.integratedArchive": "System Archive",
       "detail.synchronization": "Analysis Status",
       "detail.transmissionIntegrity": "Data Integrity",
@@ -78,10 +95,13 @@ const resources = {
       "app.searchPlaceholder": "Search celestial body...",
       "node.createdTime": "Creation Time",
       "node.modifiedTime": "Last Modification",
-      "help.complexity": "Calculated based on the number of functions and lines of code. High levels indicate harder to maintain files.",
+      "help.complexity":
+        "Calculated based on the number of functions and lines of code. High levels indicate harder to maintain files.",
       "help.biomass": "The physical disk space occupied by the source file.",
-      "help.protocol": "The programming language or syntax specification detected.",
-      "help.linkages": "External modules or files that this file imports logic from.",
+      "help.protocol":
+        "The programming language or syntax specification detected.",
+      "help.linkages":
+        "External modules or files that this file imports logic from.",
       "settings.depth": "Scan Depth",
       "app.settings": "CONTROL PANEL",
       "universe.readmeTitle": "SYSTEM OVERVIEW",
@@ -92,7 +112,7 @@ const resources = {
       "universe.scanning": "SCANNING SECTOR",
       "universe.noReadme": "NO DATA RECORDED",
       "detail.jumpTo": "Stellar Jump: {{name}}",
-    }
+    },
   },
   zh: {
     translation: {
@@ -100,6 +120,7 @@ const resources = {
       "app.subtitle": "分析引擎已就绪",
       "app.scan": "导入项目",
       "app.onlySrc": "仅分析 src 目录",
+      "app.importing": "正在导入解析...",
       "app.emptyPrompt": "在宇宙中点击一个星球以查看详细分析。",
       "node.systemCore": "目录节点",
       "node.planetaryCore": "文件节点",
@@ -124,7 +145,13 @@ const resources = {
       "app.sync": "同步状态",
       "app.celestials": "个文件",
       "detail.deepScan": "深度分析",
-      "detail.depart": "返回中心",
+      "detail.back": "返回主视图",
+      "detail.close": "关闭",
+      "detail.status": "运行正常",
+      "detail.protocol_label": "视觉宇宙协议",
+      "detail.system_status": "系统状态",
+      "welcome.guide_ready": "引导就绪",
+      "sidebar.filter_desc": "仅扫描核心源码资产",
       "detail.celestialIntel": "节点基本信息",
       "detail.protocol": "源码协议",
       "detail.level": "{{level}} 级复杂度",
@@ -150,13 +177,19 @@ const resources = {
       "app.welcome.subtitle": "将您的代码库转化为可交互的 3D 星系",
       "app.welcome.import_guide": "导入本地项目文件夹以开启探索",
       "app.welcome.feature.mapping": "3D 架构图：将目录与文件可视化为行星系统",
-      "app.welcome.feature.telemetry": "代码洞察：实时查看复杂度、依赖关系与提交历史",
-      "app.welcome.feature.navigation": "流畅导航：在复杂的模块与层级间自由穿梭",
+      "app.welcome.feature.telemetry":
+        "代码洞察：实时查看复杂度、依赖关系与提交历史",
+      "app.welcome.feature.navigation":
+        "流畅导航：在复杂的模块与层级间自由穿梭",
       "app.welcome.controls.title": "鼠标操作指南",
       "app.welcome.controls.rotate": "旋转视图",
       "app.welcome.controls.pan": "平移视角",
       "app.welcome.controls.zoom": "缩放大小",
       "app.welcome.controls.select": "选中节点",
+      "welcome.controls.rotate_key": "左键拖拽",
+      "welcome.controls.pan_key": "右键拖拽",
+      "welcome.controls.zoom_key": "滚轮缩放",
+      "welcome.controls.select_key": "鼠标点击",
       "detail.integratedArchive": "系统归档存档",
       "detail.synchronization": "解析完成率",
       "detail.transmissionIntegrity": "数据可靠性",
@@ -169,7 +202,8 @@ const resources = {
       "app.searchPlaceholder": "搜索代码星球...",
       "node.createdTime": "创建时间",
       "node.modifiedTime": "最后修改",
-      "help.complexity": "根据函数数量、代码行数计算得出。等级越高代表代码逻辑越复杂，维护难度越大。",
+      "help.complexity":
+        "根据函数数量、代码行数计算得出。等级越高代表代码逻辑越复杂，维护难度越大。",
       "help.biomass": "源文件在磁盘上实际占用的物理空间大小。",
       "help.protocol": "根据文件后缀名识别出的编程语言或语法规范。",
       "help.linkages": "该文件内部通过 import 显式调用的外部模块或文件。",
@@ -183,8 +217,8 @@ const resources = {
       "universe.scanning": "正在扫描区域",
       "universe.noReadme": "未检测到数据分析",
       "detail.jumpTo": "星际跳跃: {{name}}",
-    }
-  }
+    },
+  },
 };
 
 i18n
@@ -194,8 +228,8 @@ i18n
     resources,
     fallbackLng: "en",
     interpolation: {
-      escapeValue: false
-    }
+      escapeValue: false,
+    },
   });
 
 export default i18n;

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Rocket, MousePointer2, Move, ZoomIn, Info, ShieldCheck, Zap, Layers } from "lucide-react";
 
 export const WelcomeHUD = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const features = [
     { icon: <Layers size={18} />, text: t('app.welcome.feature.mapping') },
@@ -12,10 +12,10 @@ export const WelcomeHUD = () => {
   ];
 
   const controls = [
-    { icon: <MousePointer2 size={16} />, label: t('app.welcome.controls.rotate'), key: i18n.language === 'zh' ? '左键拖拽' : 'Left Drag' },
-    { icon: <Move size={16} />, label: t('app.welcome.controls.pan'), key: i18n.language === 'zh' ? '右键拖拽' : 'Right Drag' },
-    { icon: <ZoomIn size={16} />, label: t('app.welcome.controls.zoom'), key: i18n.language === 'zh' ? '滚轮缩放' : 'Scroll' },
-    { icon: <Rocket size={16} />, label: t('app.welcome.controls.select'), key: i18n.language === 'zh' ? '鼠标点击' : 'Click' },
+    { icon: <MousePointer2 size={16} />, label: t('app.welcome.controls.rotate'), key: t('welcome.controls.rotate_key') },
+    { icon: <Move size={16} />, label: t('app.welcome.controls.pan'), key: t('welcome.controls.pan_key') },
+    { icon: <ZoomIn size={16} />, label: t('app.welcome.controls.zoom'), key: t('welcome.controls.zoom_key') },
+    { icon: <Rocket size={16} />, label: t('app.welcome.controls.select'), key: t('welcome.controls.select_key') },
   ];
 
   return (
@@ -38,7 +38,7 @@ export const WelcomeHUD = () => {
             className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-mono tracking-[0.3em] uppercase mb-4"
           >
             <Info size={12} />
-            GUIDE READY
+            {t("welcome.guide_ready")}
           </motion.div>
           
           <h1 className="text-5xl font-black text-white tracking-tighter italic">
