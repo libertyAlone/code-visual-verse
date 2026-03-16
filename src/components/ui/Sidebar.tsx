@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-    Rocket, 
     Settings, 
     FolderOpen, 
     ChevronRight, 
@@ -15,6 +14,7 @@ import {
     Activity,
     Search
 } from "lucide-react";
+import { Logo } from "./Logo";
 import { useStore, ProjectFile } from "../../store/useStore";
 import { useProject } from "../../hooks/useProject";
 
@@ -64,8 +64,10 @@ export const Sidebar = () => {
             <div className="px-8 py-5 border-b border-white/5 bg-linear-to-b from-white/2 to-transparent space-y-5 relative z-30">
                 <div className="flex flex-row items-center justify-between gap-6">
                     <div className="flex flex-row items-center gap-6">
-                        <div className="shrink-0 w-12 h-12 bg-linear-to-br from-cyan-500/20 to-blue-600/20 border border-white/10 flex items-center justify-center shadow-lg">
-                            <Rocket className="text-cyan-400" size={20} />
+                        <div className="shrink-0 w-14 h-14 bg-linear-to-br from-cyan-500/10 to-blue-600/10 border border-white/5 flex items-center justify-center shadow-2xl relative">
+                            {/* Decorative Glow */}
+                            <div className="absolute inset-0 bg-cyan-500/10 blur-xl rounded-full" />
+                            <Logo size={32} className="relative z-10" />
                         </div>
                         <div>
                             <h1 className="text-lg font-black text-white tracking-[0.2em] uppercase leading-none">

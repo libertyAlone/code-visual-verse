@@ -1,13 +1,12 @@
 import { Suspense, useMemo, useRef, useEffect, useState } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { OrbitControls, Stars, Sparkles, Points, PointMaterial, Float, Text as DreiText } from "@react-three/drei";
+import { OrbitControls, Stars, Sparkles, Float, Text as DreiText } from "@react-three/drei";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { Planet } from "./Planet";
 import * as THREE from "three";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { ProjectFile } from "../../store/useStore";
-import { DependencyNebula } from "./UniverseHelpers";
 
 interface UniverseProps {
   nodes: ProjectFile[];
@@ -34,68 +33,58 @@ const seededRandom = (seed: string) => {
 
 
 const GravityLink = ({ start, end, color }: { start: [number, number, number], end: [number, number, number], color: string }) => {
-    const line = useMemo(() => {
-        const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.LineBasicMaterial({ 
-            color, 
-            transparent: true, 
-            opacity: 0.1, 
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        return new THREE.Line(geometry, material);
-    }, [start, end, color]);
-
-    return <primitive object={line} raycast={() => null} />;
-};
-
-const DirectorySector = ({ position, radius, color, childrenPositions, onClick }: { 
-    position: [number, number, number], 
-    radius: number, 
-    color: string,
-    childrenPositions: [number, number, number][],
-    onClick?: () => void
-}) => {
-    const sphereRef = useRef<THREE.Points>(null);
-    const ringRef = useRef<THREE.Mesh>(null);
-    
-    useFrame((state) => {
-        const time = state.clock.getElapsedTime();
-        if (sphereRef.current) {
-            sphereRef.current.rotation.y += 0.001;
-            const pulse = 1 + Math.sin(time * 1.5) * 0.02;
-            sphereRef.current.scale.setScalar(pulse);
-        }
-        if (ringRef.current) {
-            ringRef.current.rotation.z -= 0.005;
-        }
-    });
+    const { mid, dist, rotation } = useMemo(() => {
+        const vStart = new THREE.Vector3(...start);
+        const vEnd = new THREE.Vector3(...end);
+        const distance = vStart.distanceTo(vEnd);
+        const midpoint = new THREE.Vector3().addVectors(vStart, vEnd).multiplyScalar(0.5);
+        
+        const direction = new THREE.Vector3().subVectors(vEnd, vStart).normalize();
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        const rot = new THREE.Euler().setFromQuaternion(quaternion);
+        
+        return { mid: midpoint, dist: distance, rotation: rot };
+    }, [start, end]);
 
     return (
-        <group position={position} onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
-            {/* Holographic Force Field Points */}
-            <Points ref={sphereRef as any} raycast={() => null}>
-                <sphereGeometry args={[radius, 32, 32]} />
-                <PointMaterial 
-                    color={color} 
-                    transparent 
-                    opacity={0.08} 
-                    size={0.15}
-                    sizeAttenuation={true}
-                    blending={THREE.AdditiveBlending}
-                    depthWrite={false}
-                />
-            </Points>
+        <mesh position={mid} rotation={rotation} raycast={() => null}>
+            <cylinderGeometry args={[0.02, 0.02, dist, 4]} />
+            <meshBasicMaterial 
+                color={color} 
+                transparent 
+                opacity={0.15} 
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+            />
+        </mesh>
+    );
+};
 
-            {/* Core Glow Dot - Now clickable */}
-            <mesh>
-                <sphereGeometry args={[2, 8, 8]} />
-                <meshBasicMaterial color={color} transparent opacity={0.5} />
+const DirectorySector = ({ position, color, childrenPositions, onClick, sector }: { 
+    position: [number, number, number], 
+    color: string,
+    childrenPositions: [number, number, number][],
+    onClick?: () => void,
+    sector: string
+}) => {
+    const [hovered, setHovered] = useState(false);
+    const isRoot = sector === 'root' || sector === 'ROOT';
+
+    return (
+        <group 
+            position={position} 
+            onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+            onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
+            onPointerOut={() => setHovered(false)}
+        >
+            {/* Invisible Raycast Target (To avoid weird spheres) */}
+            <mesh visible={false}>
+                <boxGeometry args={[isRoot ? 20 : 5, isRoot ? 20 : 5, isRoot ? 20 : 5]} />
+                <meshBasicMaterial transparent opacity={0} />
             </mesh>
-            
-            {/* Gravity Connections to children */}
-            {childrenPositions.map((childPos, i) => (
+
+            {/* Gravity Connections to children - Hidden for root, or shown only on hover */}
+            {!isRoot && hovered && childrenPositions.map((childPos, i) => (
                 <GravityLink 
                     key={i} 
                     start={[0, 0, 0]} 
@@ -112,7 +101,10 @@ const FloatingReadme = ({ path, position, color }: { path: string, position: [nu
     const [content, setContent] = useState(t("universe.readmeWait"));
 
     useEffect(() => {
-        invoke("read_file", { path: path + (path.endsWith('/') || path.endsWith('\\') ? "" : "/") + "README.md" })
+        // Normalize path for lookup
+        const normalizedPath = path.replace(/\\/g, '/');
+        const readmePath = normalizedPath + (normalizedPath.endsWith('/') ? "" : "/") + "README.md";
+        invoke("read_file", { path: readmePath })
             .then((res: any) => setContent(res))
             .catch(() => setContent(t("universe.noReadme")));
     }, [path, t]);
@@ -191,8 +183,13 @@ const CameraController = ({ resetTrigger, focusTarget, galaxyNodes, onFocusCompl
 
     useEffect(() => {
         if (focusTarget) {
-            // Find target pos - could be a specific node or a directory (galaxy system center)
-            const node = galaxyNodes.find(n => n.path === focusTarget);
+            const normalizedTarget = focusTarget.replace(/\\/g, '/');
+            
+            // 1. Direct match (for files or specific directory nodes)
+            const node = galaxyNodes.find(n => 
+                n.path.replace(/\\/g, '/') === normalizedTarget
+            );
+
             if (node) {
                 const nodePos = new THREE.Vector3(...node.position);
                 currentTarget.current = {
@@ -200,13 +197,21 @@ const CameraController = ({ resetTrigger, focusTarget, galaxyNodes, onFocusCompl
                     lookAt: nodePos.clone()
                 };
             } else {
-                // Try to find if this path is a sector/directory name in the legend
-                // We find the first node that belongs to this sector to get the system center
-                const systemNode = galaxyNodes.find(n => n.sector === focusTarget || n.path.startsWith(focusTarget + '/'));
+                // 2. System match (for legend items that might be sector names or parent paths)
+                // We find the first node that belongs to this system to get the center
+                const systemNode = galaxyNodes.find(n => {
+                    const normalizedNodePath = n.path.replace(/\\/g, '/');
+                    return (
+                        n.sector === focusTarget || 
+                        normalizedNodePath === normalizedTarget ||
+                        normalizedNodePath.endsWith('/' + normalizedTarget)
+                    );
+                });
+
                 if (systemNode && systemNode.systemPos) {
                   const sysPos = new THREE.Vector3(...systemNode.systemPos);
                   currentTarget.current = {
-                      pos: sysPos.clone().add(new THREE.Vector3(150, 150, 150)),
+                      pos: sysPos.clone().add(new THREE.Vector3(200, 200, 200)),
                       lookAt: sysPos.clone()
                   };
                 }
@@ -288,8 +293,9 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
 
     const dirGroups: Record<string, ProjectFile[]> = {};
     nodes.forEach(node => {
-      if (!node || !node.path) return; // Skip invalid nodes
-      const parts = node.path.split(/[\\/]/);
+      if (!node || !node.path) return; 
+      const normalizedPath = node.path.replace(/\\/g, '/');
+      const parts = normalizedPath.split('/');
       const parent = parts.slice(0, -1).join('/') || 'root';
       if (!dirGroups[parent]) dirGroups[parent] = [];
       dirGroups[parent].push(node);
@@ -310,14 +316,25 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
       const systemSeed = seededRandom(parent);
       const systemY = (systemSeed - 0.5) * 120;
 
+      let currentOrbitRadius = 40;
       dirGroups[parent].sort((a, b) => a.name.localeCompare(b.name)).forEach((node, planetIndex) => {
+        // Calculate dynamic size similar to the Planet component for layout precision
+        const nodeComplexityScale = node.complexity ? Math.min(node.complexity / 2.5, 12) : 0;
+        const nodeFinalSize = 3 + nodeComplexityScale + Math.sqrt(node.size / 200);
+        
         const planetAngle = (planetIndex / dirGroups[parent].length) * Math.PI * 2;
-        const orbitRadius = node.is_dir ? 0 : 35 + planetIndex * 5;
+        
+        // Cumulative radius to prevent overlap: Add the current planet's size plus some padding
+        if (!node.is_dir) {
+            currentOrbitRadius += nodeFinalSize + 15; 
+        }
+        
+        const orbitRadius = node.is_dir ? 0 : currentOrbitRadius;
 
         const x = systemX + Math.cos(planetAngle) * orbitRadius;
         const z = systemZ + Math.sin(planetAngle) * orbitRadius;
         const nodeSeed = seededRandom(node.path);
-        const y = systemY + (nodeSeed - 0.5) * 20;
+        const y = systemY + (nodeSeed - 0.5) * 40; // Increased vertical spread
 
         const color = getDirColor(node.path);
 
@@ -387,10 +404,10 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
 
   return (
     <div className="w-full h-full bg-[#010103] relative">
-      <Canvas dpr={[1, 2.5]} camera={{ position: [500, 500, 600], fov: 40, far: 10000 }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[300, 300, 300]} intensity={4} color="#ffffff" />
-          <spotLight position={[-200, 500, 200]} angle={0.4} penumbra={1} intensity={25} color="#4488ff" />
+      <Canvas dpr={[1, 2]} camera={{ position: [500, 500, 600], fov: 40, far: 10000 }} gl={{ antialias: false }}>
+          <ambientLight intensity={0.4} />
+          <pointLight position={[300, 300, 300]} intensity={20} color="#ffffff" />
+          <spotLight position={[-200, 500, 200]} angle={0.4} penumbra={1} intensity={60} color="#4488ff" />
           
           <Suspense fallback={null}>
             <Stars radius={600} depth={150} count={10000} factor={8} saturation={1} fade speed={2} />
@@ -400,10 +417,12 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
           <group>
             {/* Render Directories as Holographic Sectors */}
             {finalNodes.filter((n: any) => n.is_dir).map((node: any, i: number) => {
+                const normalizedNodePath = node.path.replace(/\\/g, '/');
                 const systemFiles = finalNodes.filter((f: any) => {
-                    const parts = f.path.split(/[\\/]/);
+                    const normalizedFilePath = f.path.replace(/\\/g, '/');
+                    const parts = normalizedFilePath.split('/');
                     const parent = parts.slice(0, -1).join('/') || 'root';
-                    return (parent === node.path || (node.path === 'root' && parent === 'root')) && !f.is_dir;
+                    return (parent === normalizedNodePath || (normalizedNodePath === 'root' && parent === 'root')) && !f.is_dir;
                 });
 
                 const radius = systemFiles.length > 0 
@@ -419,10 +438,10 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
                     <group key={`sector-grp-${node.path}-${i}`}>
                         <DirectorySector 
                             position={node.position}
-                            radius={radius}
                             color={getDirColor(node.path)}
                             childrenPositions={systemFiles.map((f: any) => f.position)}
                             onClick={() => onSelect(node)}
+                            sector={node.sector}
                         />
                         {node.has_readme && (
                             <FloatingReadme 
@@ -459,7 +478,7 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
             })}
           </group>
 
-          <DependencyNebula galaxyNodes={finalNodes} />
+{/* DependencyNebula removed to reduce visual clutter and "weird line" artifacts */}
 
           <CameraController 
             resetTrigger={resetCounter} 
@@ -477,8 +496,8 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
             minDistance={40}
           />
           
-          <EffectComposer multisampling={8}>
-            <Bloom luminanceThreshold={1.2} mipmapBlur intensity={1.5} radius={0.4} />
+          <EffectComposer multisampling={0}>
+            <Bloom luminanceThreshold={1.2} mipmapBlur={false} intensity={1.5} radius={0.4} />
           </EffectComposer>
       </Canvas>
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">

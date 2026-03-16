@@ -1,7 +1,15 @@
 import { useRef, useMemo, Suspense } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Float, Points, PointMaterial, Text, Trail, MeshDistortMaterial } from "@react-three/drei";
+import { useFrame, useLoader } from "@react-three/fiber";
+import { Float, Text, Trail, Billboard } from "@react-three/drei";
 import * as THREE from "three";
+
+// Pre-load textures for performance
+const texturePaths = {
+  rocky: '/textures/rocky.png',
+  gas_giant: '/textures/gas_giant.png',
+  atmospheric: '/textures/atmospheric.png',
+  continental: '/textures/continental.png'
+};
 
 interface SubElement {
   name: string;
@@ -56,9 +64,8 @@ const FunctionSatellite = ({ name, index, total, planetSize, color, onClick }: {
           position={[0, planetSize * 0.4, 0]}
           fontSize={planetSize * 0.2}
           color="white"
-          anchorX="center"
+          anchorY="middle"
           maxWidth={2}
-          font={undefined} // Use default to avoid loading issues
         >
           {name}
         </Text>
@@ -69,42 +76,52 @@ const FunctionSatellite = ({ name, index, total, planetSize, color, onClick }: {
 
 export const Planet = ({ name, position, size, color: originalColor, isDir, subElements, isOpened, activity = 0, complexity = 0, onClick }: PlanetProps) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.Mesh>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+
+  // Load all textures
+  const textures = {
+      rocky: useLoader(THREE.TextureLoader, texturePaths.rocky),
+      gas: useLoader(THREE.TextureLoader, texturePaths.gas_giant),
+      atmo: useLoader(THREE.TextureLoader, texturePaths.atmospheric),
+      cont: useLoader(THREE.TextureLoader, texturePaths.continental),
+  };
+
+  // Ensure textures wrap and fill properly
+  useMemo(() => {
+    Object.values(textures).forEach(tex => {
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 1);
+    });
+  }, [textures]);
 
   // Derived visuals
-  const complexityFactor = Math.min(complexity / 10, 1);
-  const activityFactor = Math.min(activity / 50, 1);
+  const complexityFactor = Math.min(complexity / 20, 1);
+  const activityFactor = Math.min(activity / 100, 1);
   
-  // High complexity planets shift towards red
+  // Select texture based on characteristics
+  const selectedTexture = useMemo(() => {
+    if (complexity > 30) return textures.gas;
+    if (size > 20) return textures.cont;
+    if (subElements && subElements.length > 10) return textures.atmo;
+    return textures.rocky;
+  }, [complexity, size, subElements, textures]);
+
   const finalColor = useMemo(() => {
     const col = new THREE.Color(originalColor);
+    // Shift color towards a "hotter" spectrum for complex files
     if (complexity > 5) {
-        col.lerp(new THREE.Color("#ff3333"), complexityFactor * 0.5);
+        col.lerp(new THREE.Color("#ff3300"), complexityFactor * 0.6);
     }
     return col;
   }, [originalColor, complexity, complexityFactor]);
 
-  const particles = useMemo(() => {
-    const temp = [];
-    // Directories (Stars) have much denser corona, Files have sparse atmospheres
-    const count = isDir ? 100 : (isOpened ? 40 : (8 + Math.floor(activityFactor * 20)));
-    for (let i = 0; i < count; i++) {
-      const p = new THREE.Vector3().setFromSphericalCoords(
-        size * (isDir ? (1.3 + Math.random() * 0.8) : (1.2 + Math.random() * 0.4)),
-        Math.random() * Math.PI,
-        Math.random() * Math.PI * 2
-      );
-      temp.push(p.x, p.y, p.z);
-    }
-    return new Float32Array(temp);
-  }, [size, isDir, isOpened, activityFactor]);
-
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
     if (meshRef.current) {
-      meshRef.current.rotation.y += isDir ? 0.005 : (0.01 + activityFactor * 0.05);
-      meshRef.current.rotation.z += 0.001;
+      meshRef.current.rotation.y += isDir ? 0.005 : (0.01 + activityFactor * 0.08);
+      meshRef.current.rotation.z += 0.002;
     }
     if (ringRef.current) {
       ringRef.current.rotation.z += 0.01;
@@ -115,71 +132,58 @@ export const Planet = ({ name, position, size, color: originalColor, isDir, subE
   });
 
   return (
-    <Float speed={2 + activityFactor * 4} rotationIntensity={0.5 + complexityFactor} floatIntensity={0.5} position={position}>
+    <Float speed={2 + activityFactor * 4} rotationIntensity={0.3 + complexityFactor} floatIntensity={0.5} position={position}>
       <group>
-        {/* Invisible larger hit area to make planets easier to click */}
+        {/* Click Area */}
         <mesh visible={false} onClick={() => { if (!isDir) onClick(); }}>
           <sphereGeometry args={[Math.max(size * 1.5, 8), 8, 8]} />
         </mesh>
 
-
-        {/* Main Celestial Body (Only for files) */}
         {!isDir && (
-            <mesh ref={meshRef}>
-              <sphereGeometry args={[size, 128, 128]} />
-              <MeshDistortMaterial
-                color={finalColor}
-                speed={1.0 + activityFactor * 3}
-                distort={0.15 + complexityFactor * 0.4}
-                radius={1}
-                metalness={0.8}
-                roughness={0.15 + complexityFactor * 0.2}
-                emissive={finalColor}
-                emissiveIntensity={0.2 + activityFactor * 1.5}
-              />
-            </mesh>
+            <group>
+                <mesh ref={meshRef}>
+                  <sphereGeometry args={[size, 64, 64]} />
+                  <meshStandardMaterial
+                    map={selectedTexture}
+                    color={finalColor}
+                    metalness={0.1}
+                    roughness={0.9}
+                    emissive={finalColor}
+                    emissiveIntensity={0.05 + activityFactor * 4.0} // Brightness based on Activity
+                  />
+                </mesh>
+
+                {/* Planetary Ring for high complexity nodes */}
+                {complexity > 10 && (
+                    <mesh ref={ringRef} rotation={[Math.PI / 2.5, 0, 0]}>
+                        <torusGeometry args={[size * 1.8, 0.2, 2, 64]} />
+                        <meshStandardMaterial 
+                            color={finalColor} 
+                            transparent 
+                            opacity={0.6} 
+                            emissive={finalColor}
+                            emissiveIntensity={2}
+                        />
+                    </mesh>
+                )}
+            </group>
         )}
 
-
-
-        {/* Labels */}
+        {/* Labels moved further out to avoid clipping */}
         <Suspense fallback={null}>
-          <Text
-            position={[0, size + 2, 0]}
-            fontSize={1.0}
-            color="white"
-            anchorX="center"
-            outlineWidth={0.05}
-            outlineColor="#000000"
-          >
-            {name}
-          </Text>
+          <Billboard position={[0, size * 1.5 + 4, 0]}>
+            <Text
+              fontSize={0.9}
+              color="white"
+              anchorX="center"
+              anchorY="middle"
+              outlineWidth={0.03}
+              outlineColor="#000000"
+            >
+              {name}
+            </Text>
+          </Billboard>
         </Suspense>
-
-        {/* Distance-invariant Glow Point (Ensures visibility when zoomed out) */}
-        <Points positions={new Float32Array([0, 0, 0])}>
-          <PointMaterial
-            transparent
-            color={originalColor}
-            size={4}
-            sizeAttenuation={false}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            opacity={0.6}
-          />
-        </Points>
-
-        {/* Atmosphere/Corona Particles */}
-        <Points positions={particles}>
-          <PointMaterial
-            transparent
-            color={originalColor}
-            size={0.4}
-            sizeAttenuation={true}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-          />
-        </Points>
 
         {/* Function Satellites - Only show when file is opened */}
         {isOpened && !isDir && subElements && (
