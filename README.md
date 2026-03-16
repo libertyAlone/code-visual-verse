@@ -66,5 +66,18 @@ pnpm tauri dev
 
 ## 🔒 隐私声明
 
-**CodeVisualVerse 完全在本地运行。** 
+**CodeVisualVerse 完全在本地运行。**
 所有代码扫描、Git 数据读取均在你的本地环境中完成。我们不上传任何代码到云端，保护你的项目隐私是我们的核心设计准则。
+
+---
+
+## 📄 许可证
+
+[![License: PolyForm-Noncommercial](https://img.shields.io/badge/License-PolyForm--Noncommercial-blue.svg)](LICENSE)
+
+本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。
+
+- ✅ 允许个人学习、研究、非商业用途使用
+- ✅ 允许修改和分发
+- ❌ 禁止商业用途
+- 📧 商业授权请联系项目维护者
