@@ -355,8 +355,14 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
     };
 
   const processedData = useMemo(() => {
+    // Guard against empty or invalid nodes
+    if (!nodes || nodes.length === 0) {
+      return { finalNodes: [], displayColors: [] };
+    }
+
     const dirGroups: Record<string, Node[]> = {};
     nodes.forEach(node => {
+      if (!node || !node.path) return; // Skip invalid nodes
       const parts = node.path.split(/[\\/]/);
       const parent = parts.slice(0, -1).join('/') || 'root';
       if (!dirGroups[parent]) dirGroups[parent] = [];
@@ -371,17 +377,17 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
       const goldenAngle = Math.PI * (3 - Math.sqrt(5));
       const systemRadius = Math.sqrt(systemIndex) * systemScale + 80;
       const systemAngle = systemIndex * goldenAngle;
-      
+
       const systemX = Math.cos(systemAngle) * systemRadius;
       const systemZ = Math.sin(systemAngle) * systemRadius;
-      
+
       const systemSeed = seededRandom(parent);
       const systemY = (systemSeed - 0.5) * 120;
 
       dirGroups[parent].sort((a, b) => a.name.localeCompare(b.name)).forEach((node, planetIndex) => {
         const planetAngle = (planetIndex / dirGroups[parent].length) * Math.PI * 2;
         const orbitRadius = node.is_dir ? 0 : 35 + planetIndex * 5;
-        
+
         const x = systemX + Math.cos(planetAngle) * orbitRadius;
         const z = systemZ + Math.sin(planetAngle) * orbitRadius;
         const nodeSeed = seededRandom(node.path);
@@ -403,13 +409,13 @@ export const Universe = ({ nodes, selectedPath, onSelect, resetCounter = 0, focu
           }
         }
 
-        finalNodes.push({ 
-          ...node, 
-          position: [x, y, z] as [number, number, number], 
+        finalNodes.push({
+          ...node,
+          position: [x, y, z] as [number, number, number],
           color: color,
           sector: cleanSector === 'root' ? 'ROOT' : cleanSector,
           size: node.size,
-          systemPos: [systemX, systemY, systemZ] 
+          systemPos: [systemX, systemY, systemZ]
         });
       });
     });

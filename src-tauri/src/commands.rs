@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use serde::{Serialize, Deserialize};
 
@@ -26,7 +26,7 @@ pub async fn scan_project(path: String, only_src: bool, max_depth: usize) -> Res
     }
 
     // Determine the root for scanning
-    let scan_root = if only_src && root.join("src").exists() {
+    let scan_root: PathBuf = if only_src && root.join("src").exists() {
         root.join("src")
     } else {
         root.to_path_buf()
@@ -37,12 +37,12 @@ pub async fn scan_project(path: String, only_src: bool, max_depth: usize) -> Res
     let walk_max = max_depth + 1;
 
     let ignore_list = [
-        "node_modules", ".git", ".next", "build", "dist", "target", 
+        "node_modules", ".git", ".next", "build", "dist", "target",
         "out", ".docusaurus", "coverage", ".vercel", ".turbo", "__pycache__"
     ];
-    
+
     let allowed_exts = [
-        "js", "jsx", "ts", "tsx", "vue", "svelte", "css", "scss", "json", 
+        "js", "jsx", "ts", "tsx", "vue", "svelte", "css", "scss", "json",
         "md", "rs", "go", "py", "java", "cpp", "c", "h", "html"
     ];
 
@@ -51,7 +51,7 @@ pub async fn scan_project(path: String, only_src: bool, max_depth: usize) -> Res
         .sort_by_file_name()
         .into_iter()
         .filter_map(|e| e.ok()) {
-            
+
             let metadata = match entry.metadata() {
                 Ok(m) => m,
                 Err(_) => continue,
@@ -64,7 +64,7 @@ pub async fn scan_project(path: String, only_src: bool, max_depth: usize) -> Res
 
             let is_dir = entry.file_type().is_dir();
             let name = entry.file_name().to_string_lossy().to_string();
-            
+
             if name.starts_with('.') && name != ".env" {
                 continue;
             }
@@ -100,18 +100,43 @@ pub async fn scan_project(path: String, only_src: bool, max_depth: usize) -> Res
                 .unwrap_or(0);
 
             seen_paths.insert(entry_path.clone());
-            
+
+            // Get git commit count - handle errors gracefully
             let mut commit_count = 0;
             if !is_dir {
-                if let Ok(output) = std::process::Command::new("git")
-                    .current_dir(&scan_root)
-                    .args(["rev-list", "--count", "HEAD", "--", &entry_path])
-                    .output() {
-                        if output.status.success() {
-                            let count_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                            commit_count = count_str.parse::<u32>().unwrap_or(0);
-                        }
+                // Try to get relative path from scan_root
+                let relative_path = entry.path().strip_prefix(&scan_root)
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| entry_path.clone());
+
+                // Only try git command if we're in a git repository
+                let git_dir = scan_root.join(".git");
+                let git_dir_alt = root.join(".git");
+
+                if git_dir.exists() || git_dir_alt.exists() {
+                    let git_parent = if git_dir.exists() {
+                        &scan_root
+                    } else {
+                        root
+                    };
+
+                    let mut cmd = std::process::Command::new("git");
+                    cmd.current_dir(git_parent)
+                       .args(["rev-list", "--count", "HEAD", "--", &relative_path]);
+                    
+                    #[cfg(windows)]
+                    {
+                        use std::os::windows::process::CommandExt;
+                        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
                     }
+
+                    if let Ok(output) = cmd.output() {
+                            if output.status.success() {
+                                let count_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                                commit_count = count_str.parse::<u32>().unwrap_or(0);
+                            }
+                    }
+                }
             }
 
             let has_readme = if is_dir {
@@ -125,8 +150,8 @@ pub async fn scan_project(path: String, only_src: bool, max_depth: usize) -> Res
                 path: entry_path,
                 is_dir,
                 size: metadata.len(),
-                extension: if is_dir { None } else { 
-                    entry.path().extension().map(|e| e.to_string_lossy().to_string()) 
+                extension: if is_dir { None } else {
+                    entry.path().extension().map(|e| e.to_string_lossy().to_string())
                 },
                 created_at,
                 modified_at,
@@ -157,11 +182,17 @@ pub async fn get_git_log(path: String) -> Result<Vec<GitLog>, String> {
     let path_obj = Path::new(&path);
     let parent = path_obj.parent().unwrap_or(Path::new("."));
 
-    let output = std::process::Command::new("git")
-        .current_dir(parent)
-        .args(["log", "--pretty=format:%H_DELIM_%an_DELIM_%ar_DELIM_%s_DELIM_%d_DELIM_", "--decorate=short", "-n", "20", "--", &path])
-        .output()
-        .map_err(|e| e.to_string())?;
+    let mut cmd = std::process::Command::new("git");
+    cmd.current_dir(parent)
+       .args(["log", "--pretty=format:%H_DELIM_%an_DELIM_%ar_DELIM_%s_DELIM_%d_DELIM_", "--decorate=short", "-n", "20", "--", &path]);
+    
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
 
     if !output.status.success() {
         return Ok(Vec::new());
@@ -198,11 +229,17 @@ pub async fn get_git_blame(path: String) -> Result<String, String> {
     let path_obj = Path::new(&path);
     let parent = path_obj.parent().unwrap_or(Path::new("."));
 
-    let output = std::process::Command::new("git")
-        .current_dir(parent)
-        .args(["blame", "--", &path])
-        .output()
-        .map_err(|e| e.to_string())?;
+    let mut cmd = std::process::Command::new("git");
+    cmd.current_dir(parent)
+       .args(["blame", "--", &path]);
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
 
     if !output.status.success() {
         return Ok("No blame info".to_string());
@@ -216,11 +253,17 @@ pub async fn get_git_diff(path: String, hash: String) -> Result<String, String> 
     let path_obj = Path::new(&path);
     let parent = path_obj.parent().unwrap_or(Path::new("."));
 
-    let output = std::process::Command::new("git")
-        .current_dir(parent)
-        .args(["show", &hash, "--", &path])
-        .output()
-        .map_err(|e| e.to_string())?;
+    let mut cmd = std::process::Command::new("git");
+    cmd.current_dir(parent)
+       .args(["show", &hash, "--", &path]);
+
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
 
     if !output.status.success() {
         return Err("Failed to get diff".to_string());

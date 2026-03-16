@@ -1,0 +1,85 @@
+name: Release Build
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: '--target x86_64-pc-windows-msvc'
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          # targets for universal mac and windows
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Generate ChangeLog
+        id: changelog
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            # If tag, get logs since last tag
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [ -z "$PREV_TAG" ]; then
+              git log --oneline -n 20 > CHANGELOG.txt
+            else
+              git log $PREV_TAG..HEAD --oneline > CHANGELOG.txt
+            fi
+          else
+            # If push to main, get last 10 commits
+            git log --oneline -n 10 > CHANGELOG.txt
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          cat CHANGELOG.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Build and Publish
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+          releaseName: ${{ github.ref_type == 'tag' && github.ref_name || 'CodeVisualVerse Nightly' }}
+          releaseBody: |
+            ## 🌌 ChangeLog / 更新日志
+            ${{ env.CHANGELOG }}
+            
+            ---
+            *Built automatically by GitHub Actions.*
+          releaseDraft: ${{ github.ref_type == 'tag' }} # Draft only for real releases
+          prerelease: ${{ github.ref_type != 'tag' }} # Pre-release for push to main
+          args: ${{ matrix.args }}

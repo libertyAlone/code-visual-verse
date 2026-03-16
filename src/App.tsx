@@ -115,6 +115,7 @@ function App() {
       if (selected) {
         setProjectPath(selected as string);
         setLoading(true);
+        setNodes([]); // Clear previous nodes
         try {
           const files: ProjectFile[] = await invoke("scan_project", {
             path: selected,
@@ -122,9 +123,27 @@ function App() {
             maxDepth,
           });
 
+          // Validate files is an array
+          if (!Array.isArray(files)) {
+            console.error("Invalid response from scan_project:", files);
+            setLoading(false);
+            return;
+          }
+
           const uniqueFilesMap = new Map();
-          files.forEach((f) => uniqueFilesMap.set(f.path, f));
+          files.forEach((f) => {
+            if (f && f.path) {
+              uniqueFilesMap.set(f.path, f);
+            }
+          });
           const uniqueFiles = Array.from(uniqueFilesMap.values());
+
+          // If no files found, just set empty nodes
+          if (uniqueFiles.length === 0) {
+            setNodes([]);
+            setLoading(false);
+            return;
+          }
 
           const enrichedFiles = [...uniqueFiles];
           const sourceFiles = uniqueFiles.filter(
@@ -135,6 +154,7 @@ function App() {
               ),
           );
 
+          // Only process first 30 source files to avoid performance issues
           const subset = sourceFiles.slice(0, 30);
           const batchSize = 5;
           for (let i = 0; i < subset.length; i += batchSize) {
@@ -153,19 +173,23 @@ function App() {
                     enrichedFiles[idx] = { ...enrichedFiles[idx], ...analysis };
                   }
                 } catch (e) {
-                  console.warn(`Skip parsing ${file.name}`);
+                  console.warn(`Skip parsing ${file.name}:`, e);
                 }
               }),
             );
           }
 
           setNodes(enrichedFiles);
+        } catch (error) {
+          console.error("Import failed:", error);
+          // Show error but don't crash
+          setNodes([]);
         } finally {
           setLoading(false);
         }
       }
     } catch (e) {
-      console.error("Import failed:", e);
+      console.error("Import dialog failed:", e);
       setLoading(false);
     }
   };
