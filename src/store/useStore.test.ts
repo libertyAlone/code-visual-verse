@@ -1,37 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useStore } from './useStore';
 
 // Reset store state before each test
-const getInitialState = () => ({
-  nodes: [],
-  projectPath: null,
-  selectedNode: null,
-  dirColors: [],
-  globalCommits: [],
-  selectedCommitHash: null,
-  birthTimes: {},
-  loading: false,
-  showDetail: false,
-  isTouring: false,
-  tourIndex: 0,
-  focusTarget: null,
-  searchQuery: '',
-  maxDepth: 2,
-  onlySrc: true,
-  ignoreDotFiles: true,
-  ignoreGitIgnore: true,
-  showAllDependencies: false,
-  aiConfig: {
-    protocol: 'openai' as const,
-    apiKey: '',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o',
-  },
-  messages: [],
-  isAIChatOpen: false,
-  isGeneratingMindMap: false,
-  isAISettingsModalOpen: false,
-});
 
 describe('useStore', () => {
   beforeEach(() => {

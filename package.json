@@ -21,6 +21,7 @@
     "test:rust": "cd src-tauri && cargo test",
     "test:rust:verbose": "cd src-tauri && cargo test -- --nocapture",
     "test:all": "pnpm test:run && pnpm test:rust",
+    "type-check": "tsc --noEmit",
     "prepare": "husky"
   },
   "dependencies": {

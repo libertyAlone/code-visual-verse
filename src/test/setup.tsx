@@ -67,7 +67,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
+globalThis.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
@@ -89,18 +89,18 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+globalThis.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
 // Mock requestIdleCallback
-global.requestIdleCallback = vi.fn((callback: IdleRequestCallback) => {
+globalThis.requestIdleCallback = vi.fn((callback: IdleRequestCallback) => {
   return setTimeout(callback, 1) as unknown as number;
 });
 
-global.cancelIdleCallback = vi.fn((id: number) => {
+globalThis.cancelIdleCallback = vi.fn((id: number) => {
   clearTimeout(id);
 });
 

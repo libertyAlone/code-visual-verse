@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**
  * Integration Tests for Code Visual Verse
@@ -45,7 +45,7 @@ describe('Integration: Project Import Flow', () => {
       { name: 'App.tsx', path: '/test/project/src/App.tsx', is_dir: false, size: 2048 },
       { name: 'utils.ts', path: '/test/project/src/utils.ts', is_dir: false, size: 1024 },
     ];
-    mockInvoke.mockImplementation((command: string, args: any) => {
+    mockInvoke.mockImplementation((command: string) => {
       if (command === 'scan_project') {
         return Promise.resolve(mockFiles);
       }

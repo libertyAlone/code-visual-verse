@@ -61,6 +61,8 @@ describe('PlanetDetail', () => {
     functions: ['App', 'useState'],
     imports: ['react', './styles.css'],
     complexity: 5,
+    created_at: 0,
+    modified_at: 0,
   };
 
   const mockProps = {
@@ -79,7 +81,6 @@ describe('PlanetDetail', () => {
   it('should render node details when node is provided', () => {
     render(<PlanetDetail {...mockProps} />);
     expect(screen.getByText('App.tsx')).toBeInTheDocument();
-    // Use getAllByText since the path appears in multiple places
     expect(screen.getAllByText('/src/App.tsx').length).toBeGreaterThan(0);
   });
 
@@ -126,13 +127,14 @@ describe('PlanetDetail', () => {
       path: '/src',
       is_dir: true,
       size: 0,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<PlanetDetail {...mockProps} node={dirNode} />);
     expect(screen.getByText('src')).toBeInTheDocument();
   });
 
-  // Additional tests for coverage
   it('should fetch source code on mount', async () => {
     render(<PlanetDetail {...mockProps} />);
     await waitFor(() => {
@@ -154,16 +156,9 @@ describe('PlanetDetail', () => {
     rerender(<PlanetDetail {...mockProps} />);
   });
 
-  it('should close diff when close button clicked', () => {
-    mockDiff = '+added line\n-removed line';
-    render(<PlanetDetail {...mockProps} />);
-    // Diff rendering is complex with the mocked components
-  });
-
   it('should handle file read errors gracefully', async () => {
     mockInvoke.mockRejectedValue(new Error('File not found'));
     render(<PlanetDetail {...mockProps} />);
-    // Component should handle error without crashing
     expect(screen.getByText('App.tsx')).toBeInTheDocument();
   });
 
@@ -197,7 +192,6 @@ describe('PlanetDetail', () => {
   it('should call onJump when navigating to another file', () => {
     const onJump = vi.fn();
     render(<PlanetDetail {...mockProps} onJump={onJump} />);
-    // onJump is passed to CodeViewer component
   });
 
   it('should update when node prop changes', () => {
@@ -252,7 +246,6 @@ describe('PlanetDetail', () => {
   });
 
   it('should handle multiple git logs', () => {
-    // Multiple logs scenario handled in mock
     render(<PlanetDetail {...mockProps} />);
     expect(screen.getByText('detail.gitLog')).toBeInTheDocument();
   });

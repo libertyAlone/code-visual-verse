@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { CodeViewer } from './CodeViewer';
 
 // Mock i18next
@@ -14,8 +14,7 @@ const mockOnJump = vi.fn();
 const mockShowDiff = vi.fn();
 const mockSetHoveredHash = vi.fn();
 
-// Track renderer props for testing
-let capturedRenderer: any = null;
+// Track rows for testing
 let capturedRows: any[] = [];
 let capturedStylesheet: any = {};
 
@@ -26,12 +25,11 @@ vi.mock('react-syntax-highlighter', () => ({
     renderer?: any;
     style?: any;
   }) => {
-    // Capture renderer for testing
+    // Capture rows for testing
     if (renderer) {
-      capturedRenderer = renderer;
       // Simulate the rows that would be generated
       const lines = children.split('\n');
-      capturedRows = lines.map((line: string, i: number) => ({
+      capturedRows = lines.map((line: string) => ({
         children: [{
           type: 'text',
           value: line,
@@ -77,6 +75,8 @@ describe('CodeViewer', () => {
     path: '/src/test.ts',
     is_dir: false,
     size: 100,
+    created_at: 0,
+    modified_at: 0,
   };
 
   const mockProps = {
@@ -94,7 +94,6 @@ describe('CodeViewer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    capturedRenderer = null;
     capturedRows = [];
     capturedStylesheet = {};
   });
@@ -136,6 +135,8 @@ describe('CodeViewer', () => {
       path: '/src',
       is_dir: true,
       size: 0,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={dirNode} sourceCode="" />);
@@ -148,6 +149,8 @@ describe('CodeViewer', () => {
       path: '/src/App.tsx',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={tsNode} />);
@@ -163,6 +166,8 @@ describe('CodeViewer', () => {
       path: '/src/utils.js',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={jsNode} />);
@@ -187,6 +192,8 @@ describe('CodeViewer', () => {
       path: '/src/main.rs',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={rustNode} />);
@@ -201,6 +208,8 @@ describe('CodeViewer', () => {
       path: '/src/script.py',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={pyNode} />);
@@ -215,6 +224,8 @@ describe('CodeViewer', () => {
       path: '/src/main.go',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={goNode} />);
@@ -229,6 +240,8 @@ describe('CodeViewer', () => {
       path: '/src/styles.css',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={cssNode} />);
@@ -243,6 +256,8 @@ describe('CodeViewer', () => {
       path: '/src/index.html',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={htmlNode} />);
@@ -257,6 +272,8 @@ describe('CodeViewer', () => {
       path: '/src/config.json',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={jsonNode} />);
@@ -271,6 +288,8 @@ describe('CodeViewer', () => {
       path: '/src/README.md',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={unknownNode} />);
@@ -285,6 +304,8 @@ describe('CodeViewer', () => {
       path: '/Makefile',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={noExtNode} />);
@@ -329,8 +350,8 @@ describe('CodeViewer', () => {
 
   it('should handle jump to file when token matches', async () => {
     const allNodes = [
-      { name: 'test.ts', path: '/src/test.ts', is_dir: false },
-      { name: 'utils.ts', path: '/src/utils.ts', is_dir: false },
+      { name: 'test.ts', path: '/src/test.ts', is_dir: false, size: 0, created_at: 0, modified_at: 0 },
+      { name: 'utils.ts', path: '/src/utils.ts', is_dir: false, size: 0, created_at: 0, modified_at: 0 },
     ];
 
     render(<CodeViewer {...mockProps} allNodes={allNodes} sourceCode="import utils from './utils';" />);
@@ -352,6 +373,8 @@ describe('CodeViewer', () => {
       path: '/src/Component.jsx',
       is_dir: false,
       size: 100,
+      created_at: 0,
+      modified_at: 0,
     };
 
     render(<CodeViewer {...mockProps} node={jsxNode} />);
@@ -381,6 +404,8 @@ const x = 1;`;
         path: '/src/utils.ts',
         is_dir: false,
         size: 100,
+        created_at: 0,
+        modified_at: 0,
       };
 
       render(
@@ -513,6 +538,8 @@ function Component() {
           path: `/src/test.${ext}`,
           is_dir: false,
           size: 100,
+          created_at: 0,
+          modified_at: 0,
         };
 
         const { unmount } = render(<CodeViewer {...mockProps} node={node} />);
