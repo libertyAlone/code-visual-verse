@@ -1,7 +1,8 @@
-import { useRef, useMemo, Suspense } from "react";
+import React, { useRef, useMemo, Suspense, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Float, Text, Trail } from "@react-three/drei";
 import * as THREE from "three";
+import { useStore } from "../../store/useStore";
 
 interface SubElement {
   name: string;
@@ -20,53 +21,100 @@ interface PlanetProps {
   isHighlighted?: boolean;
   textures?: any;
   onClick: () => void;
+  onOpen?: (targetFunction?: string) => void;
 }
 
-const FunctionSatellite = ({ name, index, total, planetSize, color, onClick }: { name: string, index: number, total: number, planetSize: number, color: string, onClick: () => void }) => {
+const vScale = new THREE.Vector3();
+const cSatellite = new THREE.Color();
+
+const FunctionSatellite = React.memo(({ name, index, total, planetSize, color, onOpen }: { name: string, index: number, total: number, planetSize: number, color: string, onOpen: (name: string) => void }) => {
   const ref = useRef<THREE.Group>(null);
+  const [hovered, setHovered] = useState(false);
   
   const orbitRadius = planetSize * 2.5 + (index * 1.5);
   const speed = 0.5 + (index * 0.1);
   const offset = (index / total) * Math.PI * 2;
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime() * speed + offset;
+  const setHoveredSatellite = useStore(state => state.setHoveredSatellite);
+  const timeRef = useRef(0);
+
+  useFrame((_, delta) => {
+    if (!hovered) {
+        timeRef.current += delta * speed;
+    }
+    
+    const t = timeRef.current + offset;
     if (ref.current) {
       ref.current.position.x = Math.cos(t) * orbitRadius;
       ref.current.position.z = Math.sin(t) * orbitRadius;
       ref.current.position.y = Math.sin(t * 0.5) * (planetSize * 0.5);
+      
+      if (hovered) {
+          vScale.set(1.3, 1.3, 1.3);
+          ref.current.scale.lerp(vScale, 0.1);
+      } else {
+          vScale.set(1, 1, 1);
+          ref.current.scale.lerp(vScale, 0.1);
+      }
     }
   });
 
+  useEffect(() => {
+    if (hovered) {
+        setHoveredSatellite(name);
+    } else {
+        setHoveredSatellite(null);
+    }
+    return () => setHoveredSatellite(null);
+  }, [hovered, name, setHoveredSatellite]);
+
   return (
-    <group ref={ref} onClick={(e) => { e.stopPropagation(); onClick(); }}>
+    <group 
+        ref={ref} 
+        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer'; }}
+        onPointerOut={(e) => { e.stopPropagation(); setHovered(false); document.body.style.cursor = 'auto'; }}
+        onClick={(e) => { 
+            e.stopPropagation(); 
+            onOpen(name); 
+        }}
+    >
+      <mesh visible={false}>
+        <sphereGeometry args={[planetSize * 0.6, 16, 16]} />
+      </mesh>
+
       <Trail 
         width={1} 
         length={4} 
-        color={new THREE.Color(color)} 
+        color={hovered ? "#ffffff" : color} 
         attenuation={(t) => t * t}
       >
         <mesh>
-          <sphereGeometry args={[planetSize * 0.15, 16, 16]} />
-          <meshBasicMaterial color={color} />
+          <sphereGeometry args={[planetSize * 0.18, 16, 16]} />
+          <meshStandardMaterial 
+            color={hovered ? "#00ffff" : color} 
+            emissive={hovered ? "#00ffff" : color}
+            emissiveIntensity={hovered ? 2 : 1.5}
+          />
         </mesh>
       </Trail>
       <Suspense fallback={null}>
         <Text
-          position={[0, planetSize * 0.4, 0]}
-          fontSize={planetSize * 0.2}
-          color="white"
+          position={[0, planetSize * 0.5, 0]}
+          fontSize={planetSize * (hovered ? 0.35 : 0.25)}
+          color={hovered ? "#00ffff" : "white"}
           anchorY="middle"
-          maxWidth={2}
+          maxWidth={10}
+          font="/fonts/Inter-Bold.woff"
         >
           {name}
         </Text>
       </Suspense>
     </group>
   );
-};
+});
 
-export const Planet = ({ position, size, color: originalColor, isDir, subElements, isOpened, activity = 0, complexity = 0, isHighlighted = true, textures: propTextures, onClick }: PlanetProps) => {
+export const Planet = React.memo(({ position, size, color: originalColor, isDir, subElements, isOpened, activity = 0, complexity = 0, isHighlighted = true, textures: propTextures, onClick, onOpen }: PlanetProps) => {
+  const { isLowPerformance } = useStore();
   const meshRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
@@ -82,13 +130,24 @@ export const Planet = ({ position, size, color: originalColor, isDir, subElement
     return propTextures.rocky;
   }, [complexity, size, subElements, propTextures]);
 
+  const showHeatmap = useStore(state => state.showHeatmap);
+
+  const heatmapColor = useMemo(() => {
+    // Green (120) for low complexity, Red (0) for high complexity
+    const hue = Math.max(0, 120 - complexity * 6);
+    return new THREE.Color(`hsl(${hue}, 80%, 50%)`);
+  }, [complexity]);
+
   const finalColor = useMemo(() => {
+    if (showHeatmap) return heatmapColor;
+    
     const col = new THREE.Color(originalColor);
     if (complexity > 5) {
-        col.lerp(new THREE.Color("#ff3300"), complexityFactor * 0.6);
+        cSatellite.set("#ff3300");
+        col.lerp(cSatellite, complexityFactor * 0.6);
     }
     return col;
-  }, [originalColor, complexity, complexityFactor]);
+  }, [originalColor, complexity, complexityFactor, showHeatmap, heatmapColor]);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
@@ -107,29 +166,35 @@ export const Planet = ({ position, size, color: originalColor, isDir, subElement
   return (
     <Float speed={2 + activityFactor * 4} rotationIntensity={0.3 + complexityFactor} floatIntensity={0.5} position={position}>
       <group>
-        <mesh visible={false} onClick={() => { if (!isDir) onClick(); }}>
-          <sphereGeometry args={[Math.max(size * 1.5, 8), 8, 8]} />
+        <mesh 
+            visible={false} 
+            onClick={(e) => { e.stopPropagation(); if (!isDir) onClick(); }}
+            onDoubleClick={(e) => { e.stopPropagation(); if (!isDir && onOpen) onOpen(); }}
+            onPointerOver={() => { if(!isDir) document.body.style.cursor = 'pointer'; }}
+            onPointerOut={() => { document.body.style.cursor = 'auto'; }}
+        >
+          <sphereGeometry args={[Math.max(size * 1.5, 8), 16, 16]} />
         </mesh>
 
         {!isDir && (
             <group>
                 <mesh ref={meshRef}>
-                  <sphereGeometry args={[size, 64, 64]} />
+                  <sphereGeometry args={[size, isLowPerformance ? 16 : 32, isLowPerformance ? 16 : 32]} />
                   <meshStandardMaterial
                     map={selectedTexture}
-                    color={isHighlighted ? finalColor : new THREE.Color("#222222")}
+                    color={isHighlighted ? finalColor : "#222222"}
                     metalness={0.1}
                     roughness={0.9}
                     transparent={!isHighlighted}
                     opacity={isHighlighted ? 1 : 0.3}
-                    emissive={isHighlighted ? finalColor : new THREE.Color("#111111")}
+                    emissive={isHighlighted ? finalColor : "#111111"}
                     emissiveIntensity={isHighlighted ? (0.05 + activityFactor * 4.0) : 0.2} 
                   />
                 </mesh>
 
                 {complexity > 10 && isHighlighted && (
                     <mesh ref={ringRef} rotation={[Math.PI / 2.5, 0, 0]}>
-                        <torusGeometry args={[size * 1.8, 0.2, 2, 64]} />
+                        <torusGeometry args={[size * 1.8, 0.15, 12, 64]} />
                         <meshStandardMaterial 
                             color={finalColor} 
                             transparent 
@@ -142,12 +207,7 @@ export const Planet = ({ position, size, color: originalColor, isDir, subElement
             </group>
         )}
 
-        {isDir && (
-            <mesh ref={coreRef}>
-                <sphereGeometry args={[0.6, 16, 16]} />
-                <meshBasicMaterial color={originalColor} transparent opacity={0.4} />
-            </mesh>
-        )}
+        {/* Directory markers removed for cleaner look as requested previously */}
 
         {isOpened && !isDir && subElements && (
           <group>
@@ -159,7 +219,7 @@ export const Planet = ({ position, size, color: originalColor, isDir, subElement
                 total={subElements.length} 
                 planetSize={size} 
                 color={originalColor}
-                onClick={onClick}
+                onOpen={(funcName) => onOpen?.(funcName)}
               />
             ))}
           </group>
@@ -167,4 +227,4 @@ export const Planet = ({ position, size, color: originalColor, isDir, subElement
       </group>
     </Float>
   );
-};
+});

@@ -59,12 +59,21 @@ interface AppState {
     isTouring: boolean;
     tourIndex: number;
     focusTarget: string | null;
+    focusCoord: [number, number, number] | null;
     searchQuery: string;
     maxDepth: number;
     onlySrc: boolean;
     ignoreDotFiles: boolean;
     ignoreGitIgnore: boolean;
     showAllDependencies: boolean;
+    hoveredSatellite: string | null;
+    showHeatmap: boolean;
+    controlMode: 'auto' | 'manual';
+    radarZoom: number;
+    performanceMode: 'auto' | 'high' | 'low';
+    isLowPerformance: boolean;
+    isMobile: boolean;
+    sidebarCollapsed: boolean;
 
     // AI State
     aiConfig: AIConfig;
@@ -82,16 +91,25 @@ interface AppState {
     setIsTouring: (touring: boolean) => void;
     setTourIndex: (index: number) => void;
     setFocusTarget: (target: string | null) => void;
+    setFocusCoord: (coord: [number, number, number] | null) => void;
     setSearchQuery: (query: string) => void;
     setMaxDepth: (depth: number) => void;
     setOnlySrc: (onlySrc: boolean) => void;
     setIgnoreDotFiles: (ignore: boolean) => void;
     setIgnoreGitIgnore: (ignore: boolean) => void;
     setShowAllDependencies: (show: boolean) => void;
+    setHoveredSatellite: (name: string | null) => void;
     setDirColors: (colors: { name: string, color: string, path: string }[]) => void;
     setGlobalCommits: (commits: GitLog[]) => void;
     setSelectedCommitHash: (hash: string | null) => void;
     setBirthTimes: (times: Record<string, number>) => void;
+    setShowHeatmap: (show: boolean) => void;
+    setControlMode: (mode: 'auto' | 'manual') => void;
+    setRadarZoom: (zoom: number) => void;
+    setPerformanceMode: (mode: 'auto' | 'high' | 'low') => void;
+    setIsLowPerformance: (isLow: boolean) => void;
+    setIsMobile: (isMobile: boolean) => void;
+    setSidebarCollapsed: (collapsed: boolean) => void;
     
     // AI Actions
     setAIConfig: (config: Partial<AIConfig>) => void;
@@ -141,12 +159,21 @@ export const useStore = create<AppState>()(
             isTouring: false,
             tourIndex: 0,
             focusTarget: null,
+            focusCoord: null,
             searchQuery: '',
             maxDepth: 2,
             onlySrc: true,
             ignoreDotFiles: true,
             ignoreGitIgnore: true,
             showAllDependencies: false,
+            hoveredSatellite: null,
+            showHeatmap: false,
+            controlMode: 'auto',
+            radarZoom: 1,
+            performanceMode: 'auto',
+            isLowPerformance: false,
+            isMobile: false,
+            sidebarCollapsed: false,
 
             // AI Initial States
             aiConfig: {
@@ -169,12 +196,21 @@ export const useStore = create<AppState>()(
             setIsTouring: (isTouring) => set({ isTouring }),
             setTourIndex: (tourIndex) => set({ tourIndex }),
             setFocusTarget: (focusTarget) => set({ focusTarget }),
+            setFocusCoord: (focusCoord) => set({ focusCoord }),
             setSearchQuery: (searchQuery) => set({ searchQuery }),
             setMaxDepth: (maxDepth) => set({ maxDepth }),
             setOnlySrc: (onlySrc) => set({ onlySrc }),
             setIgnoreDotFiles: (ignoreDotFiles) => set({ ignoreDotFiles }),
             setIgnoreGitIgnore: (ignoreGitIgnore) => set({ ignoreGitIgnore }),
             setShowAllDependencies: (showAllDependencies) => set({ showAllDependencies }),
+            setHoveredSatellite: (hoveredSatellite) => set({ hoveredSatellite }),
+            setShowHeatmap: (showHeatmap) => set({ showHeatmap }),
+            setControlMode: (controlMode) => set({ controlMode }),
+            setRadarZoom: (radarZoom) => set({ radarZoom }),
+            setPerformanceMode: (performanceMode) => set({ performanceMode }),
+            setIsLowPerformance: (isLowPerformance) => set({ isLowPerformance }),
+            setIsMobile: (isMobile) => set({ isMobile }),
+            setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
             setDirColors: (dirColors) => set({ dirColors }),
             setGlobalCommits: (globalCommits) => set({ globalCommits }),
             setSelectedCommitHash: (selectedCommitHash) => set({ selectedCommitHash }),
@@ -202,7 +238,13 @@ export const useStore = create<AppState>()(
                 ignoreDotFiles: state.ignoreDotFiles,
                 ignoreGitIgnore: state.ignoreGitIgnore,
                 showAllDependencies: state.showAllDependencies,
+                sidebarCollapsed: state.sidebarCollapsed,
                 aiConfig: state.aiConfig,
+                showHeatmap: state.showHeatmap,
+                performanceMode: state.performanceMode,
+                isLowPerformance: state.isLowPerformance,
+                controlMode: state.controlMode,
+                radarZoom: state.radarZoom,
             }),
         }
     )

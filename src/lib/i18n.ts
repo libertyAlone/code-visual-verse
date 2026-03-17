@@ -149,6 +149,8 @@ const resources = {
       "universe.hologram.protected": "// Accessing protected sector...",
       "universe.hologram.source": ">> SOURCE:",
       "universe.hologram.status": "DEEP_SCAN COMPLETE // ACCESS_GRANTED",
+      "settings.heatmap": "Complexity Heatmap",
+      "settings.manualPilot": "Manual Flight Mode",
     },
   },
   zh: {
@@ -291,6 +293,8 @@ const resources = {
       "universe.hologram.protected": "// 正在尝试访问受保护区域...",
       "universe.hologram.source": ">> 源码文件:",
       "universe.hologram.status": "深度扫描完成 // 系统访问已授权",
+      "settings.heatmap": "代码复杂度热力图",
+      "settings.manualPilot": "手动飞行模式",
     },
   },
 };

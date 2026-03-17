@@ -13,14 +13,16 @@ interface PlanetDetailProps {
   allNodes: ProjectFile[];
   onBack: () => void;
   onJump: (node: ProjectFile) => void;
+  targetFunction?: string;
 }
 
-export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailProps) => {
+export const PlanetDetail = ({ node, allNodes, onBack, onJump, targetFunction }: PlanetDetailProps) => {
   const { t } = useTranslation();
   const [sourceCode, setSourceCode] = useState<string>("");
   const [hoveredHash, setHoveredHash] = useState<string | null>(null);
   
   const { logs, blameData, diff, setDiff, showDiff } = useGitInfo(node.path);
+  const hasGit = logs && logs.length > 0;
 
   useEffect(() => {
     const fetchCode = async () => {
@@ -49,48 +51,60 @@ export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailPro
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex bg-[#020208]/80 backdrop-blur-xl overflow-hidden pointer-events-auto"
     >
-      {/* Sidebar - History (Left Side) */}
-      <div className="w-[420px] h-full flex flex-col border-r border-white/10 bg-black/60 backdrop-blur-3xl shrink-0">
-        <div className="h-20 shrink-0 border-b border-white/10 flex items-center px-10 gap-4">
-          <button 
-            onClick={onBack}
-            className="group flex items-center gap-3 text-zinc-500 hover:text-white transition-all px-4 py-2 border border-white/5 hover:border-cyan-500/50 hover:bg-cyan-500/5"
-          >
-            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[12px] font-black uppercase tracking-[0.4em]">{t("detail.back")}</span>
-          </button>
-        </div>
+      {/* Sidebar - History (Left Side) - Only show if Git is available */}
+      {hasGit && (
+        <div className="w-[420px] h-full flex flex-col border-r border-white/10 bg-black/60 backdrop-blur-3xl shrink-0">
+          <div className="h-20 shrink-0 border-b border-white/10 flex items-center px-10 gap-4">
+            <button 
+              onClick={onBack}
+              className="group flex items-center gap-3 text-zinc-500 hover:text-white transition-all px-4 py-2 border border-white/5 hover:border-cyan-500/50 hover:bg-cyan-500/5"
+            >
+              <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+              <span className="text-[12px] font-black uppercase tracking-[0.4em]">{t("detail.back")}</span>
+            </button>
+          </div>
 
-        <div className="p-8 border-b border-white/10 flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
-                <h2 className="text-xl font-bold tracking-tight text-white uppercase">{node.name}</h2>
-            </div>
-            <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-widest truncate">{node.path}</span>
-        </div>
+          <div className="p-8 border-b border-white/10 flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+                  <h2 className="text-xl font-bold tracking-tight text-white uppercase">{node.name}</h2>
+              </div>
+              <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-widest truncate">{node.path}</span>
+          </div>
 
-        <GitLogsView 
-            logs={logs}
-            hoveredHash={hoveredHash}
-            setHoveredHash={setHoveredHash}
-            showDiff={showDiff}
-        />
+          <GitLogsView 
+              logs={logs}
+              hoveredHash={hoveredHash}
+              setHoveredHash={setHoveredHash}
+              showDiff={showDiff}
+          />
 
-        <div className="p-8 border-t border-white/10 bg-black/80 backdrop-blur-3xl shrink-0 pl-12">
-            <div className="flex items-center gap-3 italic">
-                <Cpu size={20} className="text-cyan-500/50" />
-                <span className="text-[12px] font-mono text-zinc-500 uppercase tracking-[0.6em]">{t('detail.integratedArchive')}</span>
-            </div>
+          <div className="p-8 border-t border-white/10 bg-black/80 backdrop-blur-3xl shrink-0 pl-12">
+              <div className="flex items-center gap-3 italic">
+                  <Cpu size={20} className="text-cyan-500/50" />
+                  <span className="text-[12px] font-mono text-zinc-500 uppercase tracking-[0.6em]">{t('detail.integratedArchive')}</span>
+              </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content Area (Right Side) */}
       <div className="flex-1 h-full overflow-hidden flex flex-col bg-[#050510]">
         {/* Header Ribbon */}
         <div className="h-16 border-b border-white/10 flex items-center justify-between px-10 bg-black/40 shrink-0">
             <div className="flex items-center gap-10">
+                {!hasGit && (
+                    <button 
+                        onClick={onBack}
+                        className="group flex items-center gap-6 text-zinc-500 hover:text-white transition-all"
+                    >
+                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                    </button>
+                )}
                 <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">{t('detail.telemetry')}</span>
+                    <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">
+                        {hasGit ? t('detail.telemetry') : node.name}
+                    </span>
                     <span className="text-[12px] font-mono text-zinc-400">{node.path}</span>
                 </div>
             </div>
@@ -117,6 +131,7 @@ export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailPro
                 showDiff={showDiff}
                 hoveredHash={hoveredHash}
                 setHoveredHash={setHoveredHash}
+                targetFunction={targetFunction}
             />
         </div>
       </div>

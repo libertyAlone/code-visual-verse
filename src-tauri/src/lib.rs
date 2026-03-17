@@ -2,8 +2,8 @@ mod commands;
 #[cfg(test)]
 mod commands_test;
 
-use tauri::menu::{Menu, Submenu, MenuItem};
-use tauri::Emitter;
+// use tauri::menu::{Menu, Submenu, MenuItem};
+// use tauri::Emitter;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -11,8 +11,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let handle = app.handle();
+            let _handle = app.handle();
             
+            // Native menu removed for consistent dark theme UI
+            /*
             // Create Language Submenu
             let lang_en = MenuItem::with_id(handle, "lang-en", "English", true, None::<&str>)?;
             let lang_zh = MenuItem::with_id(handle, "lang-zh", "中文 (Chinese)", true, None::<&str>)?;
@@ -45,6 +47,7 @@ pub fn run() {
                     _ => {}
                 }
             });
+            */
 
             Ok(())
         })

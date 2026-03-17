@@ -13,7 +13,8 @@ export const useAppEvents = () => {
         tourIndex, 
         focusTarget, 
         setTourIndex, 
-        setFocusTarget 
+        setFocusTarget,
+        setIsMobile
     } = useStore();
 
     const lastTourStepRef = useRef<number>(0);
@@ -28,33 +29,58 @@ export const useAppEvents = () => {
         };
     }, [i18n]);
 
+    // Responsive Layout Detection
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, [setIsMobile]);
+
     // Tour Cycle
     useEffect(() => {
-        if (!isTouring || nodes.length === 0) return;
+        if (!isTouring) {
+            if (focusTarget !== null) setFocusTarget(null);
+            return;
+        }
+        if (nodes.length === 0) return;
 
         const directories = nodes.filter(n => n.is_dir);
         if (directories.length === 0) return;
 
         const runTourStep = () => {
-            // Rate limit tour steps to prevent stack overflow if camera logic fires too fast
             const now = Date.now();
             if (now - lastTourStepRef.current < 2000) return; 
             lastTourStepRef.current = now;
 
-            const nextIndex = (tourIndex + 1) % directories.length;
-            const target = directories[nextIndex];
-            setTourIndex(nextIndex);
-            setFocusTarget(target.path);
-            handleSelectNode(target);
+            // Strict Filter: Only rendered nodes
+            const renderedNodes = nodes.filter(n => !n.is_dir);
+            
+            if (renderedNodes.length === 0) return;
+
+            // Pick high complexity or interesting candidates that are actually in the rendered list
+            const candidates = renderedNodes.filter(n => (n.complexity || 0) > 5 || n.commit_count && n.commit_count > 0);
+            const tourPool = candidates.length > 5 ? candidates : renderedNodes;
+
+            const nextIndex = (tourIndex + 1) % tourPool.length;
+            const target = tourPool[nextIndex];
+
+            if (target) {
+                setTourIndex(nextIndex);
+                // Ensure we use the exact path the layout engine expects
+                setFocusTarget(target.path);
+                handleSelectNode(target);
+            }
         };
 
-        // If in tour mode and nothing is being focused, start next step after a short delay
         let timeout: any;
         if (focusTarget === null) {
-            timeout = setTimeout(runTourStep, 3000); 
+            timeout = setTimeout(runTourStep, 4000); 
         }
 
-        const timer = setInterval(runTourStep, 15000);
+        const timer = setInterval(runTourStep, 12000);
         return () => {
             clearInterval(timer);
             if (timeout) clearTimeout(timeout);

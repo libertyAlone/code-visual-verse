@@ -15,6 +15,7 @@ interface CodeViewerProps {
     showDiff: (hash: string) => void;
     hoveredHash: string | null;
     setHoveredHash: (hash: string | null) => void;
+    targetFunction?: string;
 }
 
 export const CodeViewer = ({
@@ -25,9 +26,19 @@ export const CodeViewer = ({
     onJump,
     showDiff,
     hoveredHash,
-    setHoveredHash
+    setHoveredHash,
+    targetFunction
 }: CodeViewerProps) => {
     const { t } = useTranslation();
+    const jumpRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (targetFunction && jumpRef.current) {
+            setTimeout(() => {
+                jumpRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+        }
+    }, [targetFunction, sourceCode]);
 
     const getLanguage = (filename: string) => {
         const ext = filename.split('.').pop()?.toLowerCase();
@@ -84,30 +95,51 @@ export const CodeViewer = ({
         return null;
     };
 
+    const hasGit = blameData && blameData.length > 0;
+
     const customRenderer = ({ rows, stylesheet }: any) => {
         return rows.map((row: any, i: number) => {
             const blame = blameData[i] || { hash: '...', author: '...', date: '...' };
             const isHovered = hoveredHash && (blame.hash.startsWith(hoveredHash) || hoveredHash.startsWith(blame.hash));
+            
+            // Basic detection for function definition highlight
+            const isTargetFunction = targetFunction && row.children.some((child: any) => 
+                child.children?.some((grandchild: any) => 
+                    grandchild.value === targetFunction || (grandchild.children && grandchild.children.some((g: any) => g.value === targetFunction))
+                )
+            );
 
             return (
                 <div 
                     key={i} 
-                    className={`group flex min-h-[22px] border-b border-transparent transition-colors ${isHovered ? 'bg-cyan-500/15 border-l-2 border-l-cyan-500' : 'hover:bg-white/5'}`}
+                    ref={isTargetFunction ? jumpRef : null}
+                    className={`group flex min-h-[22px] border-b border-transparent transition-colors 
+                        ${isHovered ? 'bg-cyan-500/15 border-l-2 border-l-cyan-500' : 'hover:bg-white/5'}
+                        ${isTargetFunction ? 'bg-yellow-500/20 border-l-2 border-l-yellow-400 ring-1 ring-yellow-500/30 z-10' : ''}
+                    `}
                     onMouseEnter={() => setHoveredHash(blame.hash)}
                     onMouseLeave={() => setHoveredHash(null)}
                 >
-                    {/* Blame Gutter */}
-                    <div className="flex shrink-0 font-mono text-[12px] border-r border-white/5 bg-black/20 select-none">
-                        <div className="w-10 flex items-center justify-center text-zinc-700 border-r border-white/5 opacity-40">{i + 1}</div>
-                        <div 
-                            className={`w-[100px] flex items-center px-4 cursor-pointer transition-colors ${isHovered ? 'text-cyan-400 font-bold' : 'text-zinc-600'}`}
-                            onClick={() => blame.hash !== '...' && showDiff(blame.hash)}
-                        >
-                            {blame.hash.substring(0, 8)}
+                    {/* Blame Gutter - Only show if we have valid git data */}
+                    {hasGit && (
+                        <div className="flex shrink-0 font-mono text-[12px] border-r border-white/5 bg-black/20 select-none">
+                            <div className="w-10 flex items-center justify-center text-zinc-700 border-r border-white/5 opacity-40">{i + 1}</div>
+                            <div 
+                                className={`w-[100px] flex items-center px-4 cursor-pointer transition-colors ${isHovered ? 'text-cyan-400 font-bold' : 'text-zinc-600'}`}
+                                onClick={() => blame.hash !== '...' && showDiff(blame.hash)}
+                            >
+                                {blame.hash.substring(0, 8)}
+                            </div>
+                            <div className="w-[120px] flex items-center px-4 text-zinc-500 truncate">{blame.author}</div>
+                            <div className="w-[100px] flex items-center px-4 text-zinc-700 truncate">{blame.date}</div>
                         </div>
-                        <div className="w-[120px] flex items-center px-4 text-zinc-500 truncate">{blame.author}</div>
-                        <div className="w-[100px] flex items-center px-4 text-zinc-700 truncate">{blame.date}</div>
-                    </div>
+                    )}
+
+                    {!hasGit && (
+                        <div className="w-12 shrink-0 font-mono text-[11px] border-r border-white/5 bg-black/10 select-none flex items-center justify-center text-zinc-800 opacity-60">
+                            {i + 1}
+                        </div>
+                    )}
 
                     {/* Code Content */}
                     <div className="px-8 py-0.5 flex-1 overflow-hidden">

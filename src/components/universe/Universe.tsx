@@ -1,11 +1,11 @@
-import { Suspense, useMemo, useRef, useEffect, useState } from "react";
+import React, { Suspense, useMemo, useRef, useEffect, useState } from "react";
 import { Canvas, useThree, useFrame, useLoader } from "@react-three/fiber";
-import { OrbitControls, Stars, Sparkles, Float, Text, Billboard } from "@react-three/drei";
+import { OrbitControls, Stars, Float, Text, Billboard, AdaptiveDpr, AdaptiveEvents, Bvh } from "@react-three/drei";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { Planet } from "./Planet";
 import * as THREE from "three";
 import { invoke } from "@tauri-apps/api/core";
-import { ProjectFile } from "../../store/useStore";
+import { useStore, ProjectFile } from "../../store/useStore";
 import { useTranslation } from "react-i18next";
 
 interface UniverseProps {
@@ -18,6 +18,7 @@ interface UniverseProps {
   globalCommits: any[];
   showAllDependencies: boolean;
   onSelect: (node: ProjectFile) => void;
+  onOpen?: (node: ProjectFile, targetFunction?: string) => void;
   resetCounter?: number;
   focusTarget?: string | null;
   textures?: any; 
@@ -41,6 +42,7 @@ const HolographicPanel = ({ path, planetPos, planetSize, color }: { path: string
     const scanLineRef = useRef<THREE.Mesh>(null);
     const groupRef = useRef<THREE.Group>(null);
     const { camera } = useThree();
+    const { isLowPerformance } = useStore();
 
     useEffect(() => {
         if (!path) return;
@@ -54,6 +56,7 @@ const HolographicPanel = ({ path, planetPos, planetSize, color }: { path: string
     }, [path, t]);
 
     const [adaptiveOffset, setAdaptiveOffset] = useState(25);
+    const posVector = new THREE.Vector3();
 
     useFrame((state) => {
         if (scanLineRef.current) {
@@ -62,15 +65,16 @@ const HolographicPanel = ({ path, planetPos, planetSize, color }: { path: string
         }
         
         if (groupRef.current && planetPos) {
-            const worldPos = new THREE.Vector3(planetPos[0], planetPos[1], planetPos[2]);
-            const dist = camera.position.distanceTo(worldPos);
-            const scaleFactor = Math.min(Math.max(dist / 250, 1), 6);
+            posVector.set(planetPos[0], planetPos[1], planetPos[2]);
+            const dist = camera.position.distanceTo(posVector);
+            const scaleFactor = Math.min(Math.max(dist / 300, 1), 4);
             groupRef.current.scale.setScalar(scaleFactor);
 
-            // Calculate offset to prevent clipping: planet radius + panel height/2 + margin
-            // panel height is 16. scaled height is 16 * scaleFactor.
-            const newOffset = planetSize + (8 * scaleFactor) + 5;
-            setAdaptiveOffset(newOffset);
+            // Tighter offset for cleaner look: radius + margin
+            const newOffset = planetSize + (4 * scaleFactor) + 2;
+            if (Math.abs(adaptiveOffset - newOffset) > 0.5) {
+                setAdaptiveOffset(newOffset);
+            }
         }
     });
 
@@ -78,63 +82,78 @@ const HolographicPanel = ({ path, planetPos, planetSize, color }: { path: string
 
     return (
         <group position={[planetPos[0], planetPos[1] + adaptiveOffset, planetPos[2]]} ref={groupRef}>
-            {/* Energy Connection Beam */}
-            <mesh position={[0, -adaptiveOffset/2, 0]}>
-                <cylinderGeometry args={[0.05, 0.05, adaptiveOffset, 8]} />
-                <meshBasicMaterial color={color} transparent opacity={0.2} blending={THREE.AdditiveBlending} />
-            </mesh>
+            {/* Connection beam removed for cleaner appearance */}
 
             <Billboard>
-                <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.3}>
-                    {/* Background Plate - Enlarged for better containment */}
-                    <mesh renderOrder={999}>
-                        <planeGeometry args={[24, 20]} />
-                        <meshBasicMaterial color={color} transparent opacity={0.15} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} depthTest={false} />
-                    </mesh>
-                    
-                    {/* Glass Effect */}
-                    <mesh position={[0, 0, -0.05]} renderOrder={998}>
-                        <planeGeometry args={[23.8, 19.8]} />
-                        <meshBasicMaterial color="#000000" transparent opacity={0.85} side={THREE.DoubleSide} />
-                    </mesh>
+                {!isLowPerformance && (
+                    <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.3}>
+                        {/* Background Plate - Enlarged for better containment */}
+                        <mesh renderOrder={999}>
+                            <planeGeometry args={[24, 20]} />
+                            <meshBasicMaterial color={color} transparent opacity={0.15} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} depthTest={false} />
+                        </mesh>
+                        
+                        {/* Glass Effect */}
+                        <mesh position={[0, 0, -0.05]} renderOrder={998}>
+                            <planeGeometry args={[23.8, 19.8]} />
+                            <meshBasicMaterial color="#000000" transparent opacity={0.85} side={THREE.DoubleSide} />
+                        </mesh>
 
-                    {/* Scan Line */}
-                    <mesh ref={scanLineRef} position={[0, 0, 0.05]} renderOrder={1000}>
-                        <planeGeometry args={[23.6, 0.2]} />
-                        <meshBasicMaterial color={color} transparent opacity={1} blending={THREE.AdditiveBlending} depthTest={false} />
-                    </mesh>
+                        {/* Scan Line */}
+                        <mesh ref={scanLineRef} position={[0, 0, 0.05]} renderOrder={1000}>
+                            <planeGeometry args={[23.6, 0.2]} />
+                            <meshBasicMaterial color={color} transparent opacity={1} blending={THREE.AdditiveBlending} depthTest={false} />
+                        </mesh>
 
-                    {/* Border */}
-                    <lineSegments renderOrder={1000}>
-                        <edgesGeometry args={[new THREE.PlaneGeometry(24, 20)]} />
-                        <lineBasicMaterial color={color} transparent opacity={1} depthTest={false} />
-                    </lineSegments>
+                        {/* Border */}
+                        <lineSegments renderOrder={1000}>
+                            <edgesGeometry args={[new THREE.PlaneGeometry(24, 20)]} />
+                            <lineBasicMaterial color={color} transparent opacity={1} depthTest={false} />
+                        </lineSegments>
 
-                    {/* Code Text - Repositioned to stay within bounds */}
-                    <Text
-                        position={[-11, 8.5, 0.1]}
-                        fontSize={0.65}
-                        color={color}
-                        anchorX="left"
-                        anchorY="top"
-                        maxWidth={22}
-                        lineHeight={1.4}
-                        renderOrder={1001}
-                    >
-                        {`${t("universe.hologram.source")} ${path.split(/[/\\]/).pop()}\n------------------------------\n${code}`}
-                    </Text>
-                    
-                    {/* HUD Elements */}
-                    <Text position={[11, -8.5, 0.1]} fontSize={0.4} color={color} anchorX="right" anchorY="bottom" renderOrder={1001}>
-                        {t("universe.hologram.status")}
-                    </Text>
-                </Float>
+                        {/* Code Text - Repositioned to stay within bounds */}
+                        <Text
+                            position={[-11, 8.5, 0.1]}
+                            fontSize={0.65}
+                            color={color}
+                            anchorX="left"
+                            anchorY="top"
+                            maxWidth={22}
+                            lineHeight={1.4}
+                            renderOrder={1001}
+                        >
+                            {`${t("universe.hologram.source")} ${path.split(/[/\\]/).pop()}\n------------------------------\n${code}`}
+                        </Text>
+                    </Float>
+                )}
+                {isLowPerformance && (
+                    <group>
+                        <mesh renderOrder={999}>
+                            <planeGeometry args={[20, 10]} />
+                            <meshBasicMaterial color="#000000" transparent opacity={0.9} />
+                        </mesh>
+                        <Text position={[-9, 4, 0.1]} fontSize={0.8} color={color} anchorX="left" anchorY="top" maxWidth={18}>
+                            {`${path.split(/[/\\]/).pop()}\n---\n${code.substring(0, 100)}...`}
+                        </Text>
+                    </group>
+                )}
+                
+                {/* HUD Elements */}
+                <Text position={[11, -8.5, 0.1]} fontSize={0.4} color={color} anchorX="right" anchorY="bottom" renderOrder={1001}>
+                    {t("universe.hologram.status")}
+                </Text>
             </Billboard>
         </group>
     );
 };
 
-const ConstellationLines = ({ selectedNode, allNodes, opacity = 1 }: { selectedNode: any, allNodes: any[], opacity?: number }) => {
+const vTarget = new THREE.Vector3();
+const vMid = new THREE.Vector3();
+const vDir = new THREE.Vector3();
+const vUp = new THREE.Vector3(0, 1, 0);
+const qRot = new THREE.Quaternion();
+
+const ConstellationLines = React.memo(({ selectedNode, allNodes, opacity = 1 }: { selectedNode: any, allNodes: any[], opacity?: number }) => {
     const lines = useMemo(() => {
         if (!selectedNode || !selectedNode.imports) return [];
         
@@ -145,12 +164,20 @@ const ConstellationLines = ({ selectedNode, allNodes, opacity = 1 }: { selectedN
                                   .replace(/^@\//, '')
                                   .replace(/^\.\/|^\.\.\//, '')
                                   .toLowerCase();
-                return normPath.endsWith(normImp) || 
-                       normPath.endsWith(normImp + '.ts') || 
-                       normPath.endsWith(normImp + '.tsx') ||
-                       normPath.endsWith(normImp + '.js') ||
-                       normPath.endsWith(normImp + '.jsx') ||
-                       normPath.includes('/' + normImp + '/');
+                
+                const isExactMatch = normPath === normImp || 
+                                   normPath === normImp + '.ts' || 
+                                   normPath === normImp + '.tsx' ||
+                                   normPath === normImp + '.js' ||
+                                   normPath === normImp + '.jsx';
+                
+                const isRelativeMatch = normPath.endsWith('/' + normImp) ||
+                                       normPath.endsWith('/' + normImp + '.ts') ||
+                                       normPath.endsWith('/' + normImp + '.tsx') ||
+                                       normPath.endsWith('/' + normImp + '.js') ||
+                                       normPath.endsWith('/' + normImp + '.jsx');
+
+                return !n.is_dir && (isExactMatch || isRelativeMatch);
             });
             
             if (target && (target as any).position) {
@@ -167,16 +194,19 @@ const ConstellationLines = ({ selectedNode, allNodes, opacity = 1 }: { selectedN
     return (
         <group>
             {lines.map((line: any, i: number) => {
-                const vStart = new THREE.Vector3(...line.start);
-                const vEnd = new THREE.Vector3(...line.end);
-                const distance = vStart.distanceTo(vEnd);
-                const midpoint = new THREE.Vector3().addVectors(vStart, vEnd).multiplyScalar(0.5);
-                const direction = new THREE.Vector3().subVectors(vEnd, vStart).normalize();
-                const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-                const rotation = new THREE.Euler().setFromQuaternion(quaternion);
+                const vStart = new THREE.Vector3(line.start[0], line.start[1], line.start[2]);
+                vTarget.set(line.end[0], line.end[1], line.end[2]);
+                const distance = vStart.distanceTo(vTarget);
+                vMid.addVectors(vStart, vTarget).multiplyScalar(0.5);
+                vDir.subVectors(vTarget, vStart).normalize();
+                
+                if (distance < 0.1) return null;
+
+                qRot.setFromUnitVectors(vUp, vDir);
+                const rotation = new THREE.Euler().setFromQuaternion(qRot);
 
                 return (
-                    <mesh key={i} position={midpoint} rotation={rotation} raycast={() => null}>
+                    <mesh key={i} position={vMid} rotation={rotation} raycast={() => null}>
                         <cylinderGeometry args={[0.08, 0.08, distance, 6]} />
                         <meshBasicMaterial 
                             color={line.color} 
@@ -190,36 +220,169 @@ const ConstellationLines = ({ selectedNode, allNodes, opacity = 1 }: { selectedN
             })}
         </group>
     );
+});
+
+const ManualControls = () => {
+    const { camera, gl } = useThree();
+    const [keys, setKeys] = useState<Record<string, boolean>>({});
+    const speed = 2.5;
+
+    useEffect(() => {
+        const handleDown = (e: KeyboardEvent) => setKeys(k => ({ ...k, [e.code]: true }));
+        const handleUp = (e: KeyboardEvent) => setKeys(k => ({ ...k, [e.code]: false }));
+        window.addEventListener('keydown', handleDown);
+        window.addEventListener('keyup', handleUp);
+        return () => {
+            window.removeEventListener('keydown', handleDown);
+            window.removeEventListener('keyup', handleUp);
+        };
+    }, []);
+
+    useFrame((_, delta) => {
+        const d = speed * delta * 60;
+        const forward = new THREE.Vector3();
+        camera.getWorldDirection(forward);
+        const right = new THREE.Vector3().crossVectors(camera.up, forward).normalize();
+
+        if (keys['KeyW'] || keys['ArrowUp']) camera.position.addScaledVector(forward, d);
+        if (keys['KeyS'] || keys['ArrowDown']) camera.position.addScaledVector(forward, -d);
+        if (keys['KeyA'] || keys['ArrowLeft']) camera.position.addScaledVector(right, d);
+        if (keys['KeyD'] || keys['ArrowRight']) camera.position.addScaledVector(right, -d);
+        if (keys['Space']) camera.position.y += d;
+        if (keys['ShiftLeft']) camera.position.y -= d;
+    });
+
+    return (
+        <OrbitControls 
+            makeDefault 
+            enablePan={false} 
+            enableDamping 
+            dampingFactor={0.1}
+            rotateSpeed={0.5}
+            domElement={gl.domElement}
+        />
+    );
+};
+
+const RadarTracker = () => {
+    const { radarZoom } = useStore();
+    const range = 2000 / radarZoom;
+    const size = 200;
+
+    useFrame((state) => {
+        const mark = document.getElementById('radar-player-mark');
+        if (mark) {
+            const x = ((state.camera.position.x / range) + 0.5) * size - 6;
+            const y = ((state.camera.position.z / range) + 0.5) * size - 6;
+            mark.style.transform = `translate(${x}px, ${y}px)`;
+        }
+    });
+
+    return null;
+};
+
+const Radar = ({ nodes }: { nodes: any[] }) => {
+    const size = 200;
+    const { radarZoom, setRadarZoom, setFocusCoord, isMobile } = useStore();
+    const range = 2000 / radarZoom;
+
+    const handleRadarClick = (e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const worldX = (x / size - 0.5) * range;
+        const worldZ = (y / size - 0.5) * range;
+        setFocusCoord([worldX, 0, worldZ]);
+    };
+
+    const handleWheel = (e: React.WheelEvent) => {
+        e.stopPropagation();
+        setRadarZoom(Math.min(Math.max(radarZoom - e.deltaY * 0.001, 0.2), 5));
+    };
+
+    if (isMobile || nodes.length === 0) return null;
+
+    return (
+        <div 
+            className="absolute top-10 left-10 w-[200px] h-[200px] rounded-full border border-cyan-500/30 bg-black/40 backdrop-blur-md overflow-hidden group pointer-events-auto cursor-crosshair transition-shadow hover:shadow-[0_0_30px_rgba(6,182,212,0.1)] z-40 shadow-2xl"
+            onWheel={handleWheel}
+            onClick={handleRadarClick}
+        >
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+                <div className="absolute inset-x-0 top-1/2 h-px bg-cyan-500" />
+                <div className="absolute inset-y-0 left-1/2 w-px bg-cyan-500" />
+                <div className="absolute inset-0 border border-cyan-500/20 rounded-full scale-75" />
+                <div className="absolute inset-0 border border-cyan-500/10 rounded-full scale-50" />
+            </div>
+            {nodes.filter(n => !n.is_dir).map((node, i) => {
+                const x = ((node.position[0] / range) + 0.5) * size;
+                const y = ((node.position[2] / range) + 0.5) * size;
+                if (x < 0 || x > size || y < 0 || y > size) return null;
+                return (
+                    <div 
+                        key={i} 
+                        className="absolute w-1 h-1 rounded-full pointer-events-none"
+                        style={{ 
+                            left: x, 
+                            top: y, 
+                            backgroundColor: node.color,
+                            opacity: 0.6
+                        }}
+                    />
+                );
+            })}
+            {/* Player Indicator */}
+            <div 
+                id="radar-player-mark"
+                className="absolute w-3 h-3 border-2 border-white rounded-full flex items-center justify-center pointer-events-none"
+                style={{ willChange: 'transform' }}
+            >
+                <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+            </div>
+            
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-black text-white/40 uppercase tracking-[0.2em] pointer-events-none">
+                Radar x{radarZoom.toFixed(1)}
+            </div>
+        </div>
+    );
 };
 
 const CameraController = ({ resetTrigger, focusTarget, galaxyNodes, onFocusComplete }: { resetTrigger: number, focusTarget: string | null, galaxyNodes: any[], onFocusComplete: () => void }) => {
     const { camera, controls } = useThree();
+    const { focusCoord, setFocusCoord } = useStore();
     const targetPos = useMemo(() => new THREE.Vector3(500, 500, 600), []);
     const initialReset = useRef(resetTrigger);
     const currentTarget = useRef<{ pos: THREE.Vector3, lookAt: THREE.Vector3, completed: boolean } | null>(null);
 
     useEffect(() => {
         if (focusTarget) {
-            const normalizedTarget = focusTarget.replace(/\\/g, '/');
-            const node = galaxyNodes.find(n => n.path.replace(/\\/g, '/') === normalizedTarget);
+            const normalizedTarget = focusTarget.replace(/\\/g, '/').toLowerCase();
+            const node = galaxyNodes.find(n => n.path.replace(/\\/g, '/').toLowerCase() === normalizedTarget);
 
             if (node) {
                 const nodePos = new THREE.Vector3(...node.position);
+                const complexityScale = node.complexity ? Math.min(node.complexity / 2.5, 12) : 0;
+                const planetSize = (3 + complexityScale + Math.sqrt(node.size / 200));
+                
+                // Adaptive distance based on planet size
+                const cameraDist = Math.max(planetSize * 3, 30);
+                
                 currentTarget.current = {
-                    pos: nodePos.clone().add(new THREE.Vector3(50, 50, 50)),
+                    pos: nodePos.clone().add(new THREE.Vector3(cameraDist, cameraDist, cameraDist)),
                     lookAt: nodePos.clone(),
                     completed: false
                 };
             } else {
+                // Fallback: Check if it's a sector/system
                 const systemNode = galaxyNodes.find(n => {
-                    const normalizedNodePath = n.path.replace(/\\/g, '/');
+                    const normalizedNodePath = n.path.replace(/\\/g, '/').toLowerCase();
                     return n.sector === focusTarget || normalizedNodePath === normalizedTarget || normalizedNodePath.endsWith('/' + normalizedTarget);
                 });
 
                 if (systemNode && systemNode.systemPos) {
                   const sysPos = new THREE.Vector3(...systemNode.systemPos);
                   currentTarget.current = {
-                      pos: sysPos.clone().add(new THREE.Vector3(200, 200, 200)),
+                      pos: sysPos.clone().add(new THREE.Vector3(120, 120, 120)),
                       lookAt: sysPos.clone(),
                       completed: false
                   };
@@ -229,6 +392,17 @@ const CameraController = ({ resetTrigger, focusTarget, galaxyNodes, onFocusCompl
             currentTarget.current = null;
         }
     }, [focusTarget, galaxyNodes]);
+
+    useEffect(() => {
+        if (focusCoord) {
+            const coordVec = new THREE.Vector3(...focusCoord);
+            currentTarget.current = {
+                pos: coordVec.clone().add(new THREE.Vector3(150, 150, 150)),
+                lookAt: coordVec.clone(),
+                completed: false
+            };
+        }
+    }, [focusCoord]);
 
     useFrame(() => {
         if (resetTrigger !== initialReset.current) {
@@ -248,6 +422,7 @@ const CameraController = ({ resetTrigger, focusTarget, galaxyNodes, onFocusCompl
             }
             if (!currentTarget.current.completed && camera.position.distanceTo(currentTarget.current.pos) < 1) {
                 currentTarget.current.completed = true;
+                if (focusCoord) setFocusCoord(null);
                 onFocusComplete();
             }
         }
@@ -256,7 +431,48 @@ const CameraController = ({ resetTrigger, focusTarget, galaxyNodes, onFocusCompl
     return null;
 };
 
-export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommits, showAllDependencies, onSelect, resetCounter = 0, focusTarget = null, onFocusComplete = () => {}, maxDepth, projectPath, onDirectoryColors }: UniverseProps) => {
+const PerformanceMonitor = () => {
+    const { performanceMode, setIsLowPerformance } = useStore();
+    
+    useEffect(() => {
+        if (performanceMode !== 'auto') {
+            setIsLowPerformance(performanceMode === 'low');
+            return;
+        }
+
+        // Initial Hardware Heuristic
+        const cores = navigator.hardwareConcurrency || 4;
+        const memory = (navigator as any).deviceMemory || 4;
+        if (cores < 4 || memory < 4) {
+            setIsLowPerformance(true);
+            return;
+        }
+
+        // FPS Benchmark
+        let frames = 0;
+        let start = performance.now();
+        let frameId: number;
+
+        const check = () => {
+            frames++;
+            const now = performance.now();
+            if (now - start > 2000) { // Check over 2 seconds
+                const fps = (frames * 1000) / (now - start);
+                if (fps < 35) setIsLowPerformance(true);
+                return;
+            }
+            frameId = requestAnimationFrame(check);
+        };
+
+        frameId = requestAnimationFrame(check);
+        return () => cancelAnimationFrame(frameId);
+    }, [performanceMode, setIsLowPerformance]);
+
+    return null;
+};
+
+export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommits, showAllDependencies, onSelect, onOpen, resetCounter = 0, focusTarget = null, onFocusComplete = () => {}, maxDepth, projectPath, onDirectoryColors }: UniverseProps) => {
+  const { controlMode, isLowPerformance } = useStore();
   const texturesResource = useLoader(THREE.TextureLoader, [
     '/textures/rocky.png', '/textures/gas_giant.png', '/textures/atmospheric.png', '/textures/continental.png'
   ]);
@@ -349,7 +565,7 @@ export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommit
     const systemCentersMap = new Map<string, [number, number, number]>();
 
     parents.forEach((parent, systemIndex) => {
-      const systemScale = 140;
+      const systemScale = 180;
       const goldenAngle = Math.PI * (3 - Math.sqrt(5));
       const systemRadius = Math.sqrt(systemIndex) * systemScale + 80;
       const systemAngle = systemIndex * goldenAngle;
@@ -446,13 +662,25 @@ export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommit
 
   return (
     <div className="w-full h-full bg-[#010103] relative">
-      <Canvas dpr={[1, 2]} camera={{ position: [500, 500, 600], fov: 40, far: 10000 }} gl={{ antialias: false }}>
-          <ambientLight intensity={0.4} />
-          <pointLight position={[300, 300, 300]} intensity={20} color="#ffffff" />
-          <spotLight position={[-200, 500, 200]} angle={0.4} penumbra={1} intensity={60} color="#4488ff" />
+      <Canvas 
+        dpr={typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1} 
+        camera={{ position: [500, 500, 600], fov: 40, far: 10000 }} 
+        gl={{ 
+          antialias: true,
+          alpha: true,
+          stencil: false,
+          depth: true,
+          powerPreference: "high-performance"
+        }}
+      >
+          <AdaptiveDpr pixelated />
+          <AdaptiveEvents />
+          <Bvh firstHitOnly>
+          <ambientLight intensity={0.5} />
+          <pointLight position={[500, 500, 500]} intensity={250000} color="#ffffff" decay={2} />
+          <spotLight position={[-800, 1000, 800]} angle={0.3} penumbra={1} intensity={1000000} color="#4488ff" decay={2} />
           <Suspense fallback={null}>
-            <Stars radius={600} depth={150} count={10000} factor={8} saturation={1} fade speed={2} />
-            <Sparkles count={500} scale={1000} size={3} speed={0.4} opacity={0.5} color="#ffffff" />
+            <Stars radius={600} depth={150} count={isLowPerformance ? 2000 : 5000} factor={8} saturation={1} fade speed={isLowPerformance ? 0.5 : 1.5} />
           </Suspense>
           <Suspense fallback={null}>
             <group>
@@ -470,7 +698,7 @@ export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommit
                     return (
                         <group key={`${parentPath}-${i}-system`}>
                             <mesh rotation-x={Math.PI / 2} position={center}>
-                                <ringGeometry args={[calculatedRadius - 0.2, calculatedRadius + 0.2, 64]} />
+                                <ringGeometry args={[calculatedRadius - 0.2, calculatedRadius + 0.2, isLowPerformance ? 32 : 64]} />
                                 <meshBasicMaterial color={getDirColor(parentPath)} transparent opacity={0.05} />
                             </mesh>
                         </group>
@@ -499,6 +727,7 @@ export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommit
                             complexity={node.complexity}
                             textures={textureMap}
                             onClick={() => onSelect(node)}
+                            onOpen={(funcName) => onOpen?.(node, funcName)}
                         />
                     );
                 })}
@@ -520,12 +749,27 @@ export const Universe = ({ nodes, selectedPath, selectedCommitHash, globalCommit
                 ))}
             </group>
           </Suspense>
+          </Bvh>
           <CameraController resetTrigger={resetCounter} focusTarget={focusTarget} galaxyNodes={finalNodes} onFocusComplete={onFocusComplete} />
-          <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.07} maxDistance={3000} minDistance={40} />
-          <EffectComposer multisampling={1}>
-            <Bloom luminanceThreshold={1.0} mipmapBlur={true} intensity={1.2} radius={0.3} />
-          </EffectComposer>
-      </Canvas>
+          {controlMode === 'manual' ? (
+              <ManualControls />
+          ) : (
+              <OrbitControls ref={controlsRef} makeDefault enableDamping dampingFactor={0.07} maxDistance={3000} minDistance={10} />
+          )}
+          {!isLowPerformance && (
+              <EffectComposer multisampling={0}>
+                <Bloom 
+                    luminanceThreshold={0.8} 
+                    mipmapBlur={true} 
+                    intensity={1.5} 
+                    radius={0.4} 
+                />
+              </EffectComposer>
+          )}
+          <RadarTracker />
+          <PerformanceMonitor />
+        </Canvas>
+        {finalNodes.length > 0 && <Radar nodes={finalNodes} />}
     </div>
   );
 };

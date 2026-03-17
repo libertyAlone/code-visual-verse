@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAppEvents } from './useAppEvents';
 
@@ -7,6 +7,7 @@ const mockChangeLanguage = vi.fn();
 const mockHandleSelectNode = vi.fn();
 const mockSetTourIndex = vi.fn();
 const mockSetFocusTarget = vi.fn();
+const mockSetIsMobile = vi.fn();
 
 let mockIsTouring = false;
 let mockNodes: any[] = [];
@@ -35,6 +36,7 @@ vi.mock('../store/useStore', () => ({
     focusTarget: mockFocusTarget,
     setTourIndex: mockSetTourIndex,
     setFocusTarget: mockSetFocusTarget,
+    setIsMobile: mockSetIsMobile,
   }),
 }));
 
@@ -56,6 +58,10 @@ describe('useAppEvents', () => {
     mockTourIndex = 0;
     mockFocusTarget = null;
     mockListen.mockResolvedValue(mockUnlisten);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('should be defined', () => {
@@ -261,5 +267,215 @@ describe('useAppEvents', () => {
 
     renderHook(() => useAppEvents());
     await new Promise(resolve => setTimeout(resolve, 100));
+  });
+
+  describe('Tour Step Logic', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+
+    it('should execute tour step with high complexity nodes', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'low-complexity.ts', path: '/src/low-complexity.ts', is_dir: false, complexity: 2 },
+        { name: 'high-complexity.ts', path: '/src/high-complexity.ts', is_dir: false, complexity: 10 },
+      ];
+      mockFocusTarget = null;
+      mockTourIndex = 0;
+
+      renderHook(() => useAppEvents());
+
+      // Wait for initial timeout (4000ms)
+      // tourIndex starts at 0, nextIndex = (0 + 1) % 2 = 1
+      // candidates are [low-complexity.ts, high-complexity.ts] (complexity > 5 OR commit_count > 0)
+      // But since candidates.length (2) <= 5, tourPool = renderedNodes
+      // renderedNodes = [low-complexity.ts, high-complexity.ts]
+      // So nextIndex = 1 points to high-complexity.ts
+      vi.advanceTimersByTime(4000);
+
+      expect(mockSetTourIndex).toHaveBeenCalled();
+      expect(mockSetFocusTarget).toHaveBeenCalledWith('/src/high-complexity.ts');
+      expect(mockHandleSelectNode).toHaveBeenCalled();
+    });
+
+    it('should execute tour step with commit_count nodes', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'no-commits.ts', path: '/src/no-commits.ts', is_dir: false },
+        { name: 'frequently-committed.ts', path: '/src/frequently-committed.ts', is_dir: false, commit_count: 5 },
+      ];
+      mockFocusTarget = null;
+      mockTourIndex = 0;
+
+      renderHook(() => useAppEvents());
+
+      // renderedNodes = [no-commits.ts, frequently-committed.ts]
+      // candidates = [frequently-committed.ts] (commit_count > 0)
+      // candidates.length (1) <= 5, so tourPool = renderedNodes
+      // nextIndex = (0 + 1) % 2 = 1, which is frequently-committed.ts
+      vi.advanceTimersByTime(4000);
+
+      expect(mockSetTourIndex).toHaveBeenCalled();
+      expect(mockSetFocusTarget).toHaveBeenCalledWith('/src/frequently-committed.ts');
+      expect(mockHandleSelectNode).toHaveBeenCalled();
+    });
+
+    it('should use all rendered nodes when less than 5 candidates', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'file1.ts', path: '/src/file1.ts', is_dir: false, complexity: 10 },
+        { name: 'file2.ts', path: '/src/file2.ts', is_dir: false, complexity: 8 },
+        { name: 'file3.ts', path: '/src/file3.ts', is_dir: false },
+      ];
+      mockFocusTarget = null;
+      mockTourIndex = 0;
+
+      renderHook(() => useAppEvents());
+
+      // With only 2 candidates (>5 complexity), should use renderedNodes (3 files)
+      vi.advanceTimersByTime(4000);
+
+      expect(mockSetTourIndex).toHaveBeenCalled();
+      expect(mockHandleSelectNode).toHaveBeenCalled();
+    });
+
+    it('should cycle through tour pool correctly', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'file1.ts', path: '/src/file1.ts', is_dir: false, complexity: 10 },
+        { name: 'file2.ts', path: '/src/file2.ts', is_dir: false, complexity: 8 },
+        { name: 'file3.ts', path: '/src/file3.ts', is_dir: false, complexity: 6 },
+      ];
+      mockFocusTarget = null;
+      mockTourIndex = 0;
+
+      renderHook(() => useAppEvents());
+
+      // First step
+      vi.advanceTimersByTime(4000);
+      expect(mockSetTourIndex).toHaveBeenCalledWith(1);
+
+      // Reset mocks to track the next call
+      mockSetTourIndex.mockClear();
+
+      // Advance to next interval (12000ms for the interval + wait past rate limit)
+      vi.advanceTimersByTime(12000);
+
+      expect(mockSetTourIndex).toHaveBeenCalled();
+    });
+
+    it('should not run tour step when no rendered nodes exist', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'components', path: '/src/components', is_dir: true },
+        // No files, only directories
+      ];
+      mockFocusTarget = null;
+
+      renderHook(() => useAppEvents());
+
+      vi.advanceTimersByTime(4000);
+
+      expect(mockSetTourIndex).not.toHaveBeenCalled();
+      expect(mockSetFocusTarget).not.toHaveBeenCalled();
+      expect(mockHandleSelectNode).not.toHaveBeenCalled();
+    });
+
+    it('should skip tour step due to rate limiting', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'file1.ts', path: '/src/file1.ts', is_dir: false, complexity: 10 },
+      ];
+      mockFocusTarget = null;
+      mockTourIndex = 0;
+
+      renderHook(() => useAppEvents());
+
+      // First step at 4000ms
+      vi.advanceTimersByTime(4000);
+      expect(mockSetTourIndex).toHaveBeenCalledTimes(1);
+
+      // Reset mocks to track new calls
+      mockSetTourIndex.mockClear();
+
+      // Advance only a small amount (less than 2000ms rate limit)
+      vi.advanceTimersByTime(500);
+
+      // Should not have been called again due to rate limiting
+      expect(mockSetTourIndex).not.toHaveBeenCalled();
+    });
+
+    it('should handle nodes with both complexity and commit_count', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'low-value.ts', path: '/src/low-value.ts', is_dir: false },
+        { name: 'high-value.ts', path: '/src/high-value.ts', is_dir: false, complexity: 10, commit_count: 5 },
+      ];
+      mockFocusTarget = null;
+      mockTourIndex = 0;
+
+      renderHook(() => useAppEvents());
+
+      // renderedNodes = [low-value.ts, high-value.ts]
+      // candidates = [high-value.ts] (complexity > 5)
+      // candidates.length (1) <= 5, so tourPool = renderedNodes
+      // nextIndex = (0 + 1) % 2 = 1, which is high-value.ts
+      vi.advanceTimersByTime(4000);
+
+      // Node with both complexity and commit_count should be in candidates
+      expect(mockSetFocusTarget).toHaveBeenCalledWith('/src/high-value.ts');
+    });
+
+    it('should handle empty rendered nodes list after filtering', () => {
+      mockIsTouring = true;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        // Only directories, no rendered files
+        { name: 'components', path: '/src/components', is_dir: true },
+        { name: 'utils', path: '/src/utils', is_dir: true },
+      ];
+      mockFocusTarget = null;
+
+      renderHook(() => useAppEvents());
+
+      vi.advanceTimersByTime(4000);
+
+      expect(mockSetFocusTarget).not.toHaveBeenCalled();
+      expect(mockHandleSelectNode).not.toHaveBeenCalled();
+    });
+
+    it('should clear focusTarget when tour stops', () => {
+      mockIsTouring = false;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'file1.ts', path: '/src/file1.ts', is_dir: false },
+      ];
+      mockFocusTarget = '/src/file1.ts'; // Set to a value
+
+      renderHook(() => useAppEvents());
+
+      // Should clear focusTarget immediately since isTouring is false
+      expect(mockSetFocusTarget).toHaveBeenCalledWith(null);
+    });
+
+    it('should not clear focusTarget when already null', () => {
+      mockIsTouring = false;
+      mockNodes = [
+        { name: 'src', path: '/src', is_dir: true },
+        { name: 'file1.ts', path: '/src/file1.ts', is_dir: false },
+      ];
+      mockFocusTarget = null; // Already null
+
+      renderHook(() => useAppEvents());
+
+      expect(mockSetFocusTarget).not.toHaveBeenCalled();
+    });
   });
 });

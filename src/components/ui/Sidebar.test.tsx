@@ -12,6 +12,10 @@ const mockSetShowDetail = vi.fn();
 const mockSetFocusTarget = vi.fn();
 const mockSetIsAIChatOpen = vi.fn();
 const mockSetIsAISettingsModalOpen = vi.fn();
+const mockSetShowHeatmap = vi.fn();
+const mockSetControlMode = vi.fn();
+const mockSetPerformanceMode = vi.fn();
+const mockSetSidebarCollapsed = vi.fn();
 const mockHandleImport = vi.fn();
 const mockHandleSelectNode = vi.fn();
 const mockChangeLanguage = vi.fn();
@@ -35,6 +39,17 @@ let mockStoreState: any = {
   setFocusTarget: mockSetFocusTarget,
   setIsAIChatOpen: mockSetIsAIChatOpen,
   setIsAISettingsModalOpen: mockSetIsAISettingsModalOpen,
+  hoveredSatellite: null,
+  showHeatmap: false,
+  controlMode: 'auto',
+  setShowHeatmap: mockSetShowHeatmap,
+  setControlMode: mockSetControlMode,
+  performanceMode: 'auto',
+  setPerformanceMode: mockSetPerformanceMode,
+  isLowPerformance: false,
+  isMobile: false,
+  sidebarCollapsed: false,
+  setSidebarCollapsed: mockSetSidebarCollapsed,
 };
 
 vi.mock('../../store/useStore', () => ({
@@ -98,6 +113,17 @@ describe('Sidebar', () => {
       setFocusTarget: mockSetFocusTarget,
       setIsAIChatOpen: mockSetIsAIChatOpen,
       setIsAISettingsModalOpen: mockSetIsAISettingsModalOpen,
+      hoveredSatellite: null,
+      showHeatmap: false,
+      controlMode: 'auto',
+      setShowHeatmap: mockSetShowHeatmap,
+      setControlMode: mockSetControlMode,
+      performanceMode: 'auto',
+      setPerformanceMode: mockSetPerformanceMode,
+      isLowPerformance: false,
+      isMobile: false,
+      sidebarCollapsed: false,
+      setSidebarCollapsed: mockSetSidebarCollapsed,
     };
   });
 
@@ -142,15 +168,14 @@ describe('Sidebar', () => {
 
   it('should show settings panel when settings button is clicked', () => {
     render(<Sidebar />);
-    // Settings button is the Settings icon button
-    const settingsButton = screen.getByRole('button', { name: '' });
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
     fireEvent.click(settingsButton);
     expect(screen.getByText('app.settings')).toBeInTheDocument();
   });
 
   it('should change language when language button is clicked', () => {
     render(<Sidebar />);
-    const settingsButton = screen.getByRole('button', { name: '' });
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
     fireEvent.click(settingsButton);
     const langButton = screen.getByText('settings.lang');
     fireEvent.click(langButton);
@@ -284,7 +309,7 @@ describe('Sidebar', () => {
 
   it('should update max depth via slider', () => {
     render(<Sidebar />);
-    const settingsButton = screen.getByRole('button', { name: '' });
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
     fireEvent.click(settingsButton);
 
     const slider = screen.getByRole('slider');
@@ -294,7 +319,7 @@ describe('Sidebar', () => {
 
   it('should handle close settings panel by clicking outside', () => {
     render(<Sidebar />);
-    const settingsButton = screen.getByRole('button', { name: '' });
+    const settingsButton = screen.getByRole('button', { name: 'Settings' });
     fireEvent.click(settingsButton);
     expect(screen.getByText('app.settings')).toBeInTheDocument();
 
@@ -403,5 +428,13 @@ describe('Sidebar', () => {
     const onlySrcToggle = screen.getByText('app.onlySrc');
     fireEvent.click(onlySrcToggle);
     expect(mockSetOnlySrc).toHaveBeenCalledWith(true);
+  });
+
+  it('should toggle sidebar when collapse button is clicked', () => {
+    mockStoreState.sidebarCollapsed = false;
+    render(<Sidebar />);
+    const toggleButton = screen.getByRole('button', { name: 'Collapse Sidebar' });
+    fireEvent.click(toggleButton);
+    expect(mockSetSidebarCollapsed).toHaveBeenCalledWith(true);
   });
 });

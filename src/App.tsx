@@ -20,6 +20,7 @@ import { useTranslation } from "react-i18next";
 function App() {
   const { t } = useTranslation();
   const [resetCounter, setResetCounter] = useState(0);
+  const [targetFunction, setTargetFunction] = useState<string | undefined>();
   const { handleSelectNode } = useProject();
   
   // Register global events and tour logic
@@ -39,8 +40,10 @@ function App() {
     globalCommits,
     showAllDependencies,
     setShowDetail,
+    setSelectedNode,
     setFocusTarget,
     setDirColors,
+    isMobile,
   } = useStore();
 
   return (
@@ -50,7 +53,11 @@ function App() {
           <PlanetDetail
             node={selectedNode}
             allNodes={nodes as any}
-            onBack={() => setShowDetail(false)}
+            onBack={() => {
+              setShowDetail(false);
+              setTargetFunction(undefined);
+            }}
+            targetFunction={targetFunction}
             onJump={(target) => {
               setShowDetail(false);
               handleSelectNode(target);
@@ -72,6 +79,12 @@ function App() {
             globalCommits={globalCommits}
             showAllDependencies={showAllDependencies}
             onSelect={handleSelectNode as any}
+            onOpen={(node, funcName) => {
+              handleSelectNode(node);
+              setSelectedNode(node);
+              setTargetFunction(funcName);
+              setShowDetail(true);
+            }}
             resetCounter={resetCounter}
             focusTarget={focusTarget}
             onFocusComplete={() => setFocusTarget(null)}
@@ -94,8 +107,9 @@ function App() {
 
 
         {/* Directory Color Legend */}
-        <div className={`absolute left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black/40 backdrop-blur-md px-6 py-3 border border-white/5 pointer-events-auto max-w-[80vw] transition-all duration-500 ${selectedCommitHash ? 'bottom-32' : 'bottom-8'}`}>
-          {dirColors.map((item, i) => (
+        {nodes.length > 0 && !isMobile && (
+          <div className={`absolute left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black/40 backdrop-blur-md px-6 py-3 border border-white/5 pointer-events-auto max-w-[80vw] transition-all duration-500 ${selectedCommitHash ? 'bottom-32' : 'bottom-8'}`}>
+            {dirColors.map((item, i) => (
             <button 
               key={i} 
               onClick={() => setFocusTarget(item.path)}
@@ -109,22 +123,28 @@ function App() {
                 {item.name}
               </span>
             </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <ControlPanel onReset={() => setResetCounter((curr) => curr + 1)} />
-        <TourHUD />
+        {nodes.length > 0 && (
+          <>
+            <ControlPanel onReset={() => setResetCounter((curr) => curr + 1)} />
+            <TourHUD />
+            <Timeline />
+          </>
+        )}
         <LoadingOverlay />
 
-        <div className="absolute bottom-10 right-10 pointer-events-none text-right">
-          <Share2 className="text-white/5 mb-2 float-right" size={32} />
-          <p className="text-[8px] font-mono text-white/5 uppercase tracking-[0.4em] clear-both">
-            {t("detail.protocol_label")} v0.1.0<br />
-            {t("detail.system_status")}: {t("detail.status")}
-          </p>
-        </div>
-
-        <Timeline />
+        {nodes.length > 0 && (
+          <div className="absolute bottom-10 right-10 pointer-events-none text-right">
+            <Share2 className="text-white/5 mb-2 float-right" size={32} />
+            <p className="text-[8px] font-mono text-white/5 uppercase tracking-[0.4em] clear-both">
+              {t("detail.protocol_label")} v0.1.0<br />
+              {t("detail.system_status")}: {t("detail.status")}
+            </p>
+          </div>
+        )}
       </div>
       
       <AnimatePresence>
