@@ -58,14 +58,18 @@ jobs:
           # Get version from tag or use 'Nightly'
           if [ "${{ github.ref_type }}" = "tag" ]; then
             VERSION="${{ github.ref_name }}"
+          else
+            VERSION="Nightly"
+          fi
+
+          if [ "${{ github.ref_type }}" = "tag" ]; then
             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [ -z "$PREV_TAG" ]; then
               COMMITS=$(git log --pretty=format:"%s" -n 30)
             else
-              COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"%s")
+              COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"%s") || COMMITS=$(git log --pretty=format:"%s" -n 30)
             fi
           else
-            VERSION="Nightly"
             COMMITS=$(git log --pretty=format:"%s" -n 10)
           fi
 
@@ -81,7 +85,7 @@ jobs:
             echo ""
 
             # Features
-            FEATURES=$(echo "$COMMITS" | grep -iE "^feat|^feature" | sed 's/^/- /')
+            FEATURES=$(echo "$COMMITS" | grep -iE "^feat|^feature" | sed 's/^/- /' || true)
             if [ -n "$FEATURES" ]; then
               echo "### ✨ 新功能"
               echo "$FEATURES"
@@ -89,7 +93,7 @@ jobs:
             fi
 
             # Fixes
-            FIXES=$(echo "$COMMITS" | grep -iE "^fix|^bugfix" | sed 's/^/- /')
+            FIXES=$(echo "$COMMITS" | grep -iE "^fix|^bugfix" | sed 's/^/- /' || true)
             if [ -n "$FIXES" ]; then
               echo "### 🐛 修复"
               echo "$FIXES"
@@ -97,7 +101,7 @@ jobs:
             fi
 
             # Improvements
-            IMPROVEMENTS=$(echo "$COMMITS" | grep -iE "^improve|^perf|^refactor" | sed 's/^/- /')
+            IMPROVEMENTS=$(echo "$COMMITS" | grep -iE "^improve|^perf|^refactor" | sed 's/^/- /' || true)
             if [ -n "$IMPROVEMENTS" ]; then
               echo "### 🚀 优化"
               echo "$IMPROVEMENTS"
@@ -105,7 +109,7 @@ jobs:
             fi
 
             # Documentation
-            DOCS=$(echo "$COMMITS" | grep -iE "^doc|^docs" | sed 's/^/- /')
+            DOCS=$(echo "$COMMITS" | grep -iE "^doc|^docs" | sed 's/^/- /' || true)
             if [ -n "$DOCS" ]; then
               echo "### 📚 文档"
               echo "$DOCS"
@@ -113,7 +117,7 @@ jobs:
             fi
 
             # Other commits (not matching above)
-            OTHER=$(echo "$COMMITS" | grep -ivE "^feat|^feature|^fix|^bugfix|^improve|^perf|^refactor|^doc|^docs|^ci|^build|^chore|^test" | sed 's/^/- /')
+            OTHER=$(echo "$COMMITS" | grep -ivE "^feat|^feature|^fix|^bugfix|^improve|^perf|^refactor|^doc|^docs|^ci|^build|^chore|^test" | sed 's/^/- /' || true)
             if [ -n "$OTHER" ]; then
               echo "### 📝 其他"
               echo "$OTHER"
