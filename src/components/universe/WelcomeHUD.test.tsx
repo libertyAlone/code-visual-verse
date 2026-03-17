@@ -13,6 +13,8 @@ vi.mock('react-i18next', () => ({
         'app.welcome.feature.mapping': 'Code to Universe Mapping',
         'app.welcome.feature.telemetry': 'Real-time Telemetry',
         'app.welcome.feature.navigation': 'Intuitive Navigation',
+        'app.welcome.feature.ai': 'AI Assistance',
+        'app.welcome.feature.diagnostics': 'Heatmap Diagnostics',
         'app.welcome.controls.title': 'Controls',
         'app.welcome.controls.rotate': 'Rotate',
         'app.welcome.controls.pan': 'Pan',
@@ -57,7 +59,8 @@ describe('WelcomeHUD', () => {
     render(<WelcomeHUD />);
     expect(screen.getByText('Code to Universe Mapping')).toBeInTheDocument();
     expect(screen.getByText('Real-time Telemetry')).toBeInTheDocument();
-    expect(screen.getByText('Intuitive Navigation')).toBeInTheDocument();
+    expect(screen.getByText('AI Assistance')).toBeInTheDocument();
+    expect(screen.getByText('Heatmap Diagnostics')).toBeInTheDocument();
   });
 
   it('should render controls section', () => {

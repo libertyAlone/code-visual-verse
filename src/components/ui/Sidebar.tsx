@@ -215,7 +215,7 @@ export const Sidebar = () => {
                                                 className="w-full text-left text-[11px] font-black transiton-all flex justify-between items-center uppercase tracking-[0.2em]"
                                             >
                                                 <span className={isLowPerformance ? "text-yellow-400" : "text-zinc-400"}>
-                                                    {isLowPerformance ? "Performance Mode" : "High Quality"}
+                                                    {isLowPerformance ? t("settings.performanceMode") : t("settings.highQuality")}
                                                 </span>
                                                 <div className={`p-1.5 border ${isLowPerformance ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-400" : "border-white/10 text-zinc-600"}`}>
                                                     <Zap size={14} />

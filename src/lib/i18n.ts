@@ -74,8 +74,10 @@ const resources = {
         "3D Architecture: Explore directories and files as planetary systems",
       "app.welcome.feature.telemetry":
         "Code Insights: View complexity, dependencies, and git history",
-      "app.welcome.feature.navigation":
-        "Deep Navigation: Smoothly traverse through project levels",
+      "app.welcome.feature.ai":
+        "AI Assistant: Understand code logic and architecture via LLM chat",
+      "app.welcome.feature.diagnostics":
+        "Visual Diagnostics: Toggle heatmaps to identify logical hotspots",
       "app.welcome.controls.title": "Navigation Guide",
       "app.welcome.controls.rotate": "Rotate",
       "app.welcome.controls.pan": "Move",
@@ -151,6 +153,8 @@ const resources = {
       "universe.hologram.status": "DEEP_SCAN COMPLETE // ACCESS_GRANTED",
       "settings.heatmap": "Complexity Heatmap",
       "settings.manualPilot": "Manual Flight Mode",
+      "settings.performanceMode": "Performance Mode",
+      "settings.highQuality": "High Quality Mode",
     },
   },
   zh: {
@@ -222,8 +226,10 @@ const resources = {
       "app.welcome.feature.mapping": "3D 架构图：将目录与文件可视化为行星系统",
       "app.welcome.feature.telemetry":
         "代码洞察：实时查看复杂度、依赖关系与提交历史",
-      "app.welcome.feature.navigation":
-        "流畅导航：在复杂的模块与层级间自由穿梭",
+      "app.welcome.feature.ai":
+        "AI 助手：通过语言模型深度解析代码逻辑与系统架构",
+      "app.welcome.feature.diagnostics":
+        "视觉诊断：开启复杂度热力图，快速定位代码维护重灾区",
       "app.welcome.controls.title": "鼠标操作指南",
       "app.welcome.controls.rotate": "旋转视图",
       "app.welcome.controls.pan": "平移视角",
@@ -295,6 +301,8 @@ const resources = {
       "universe.hologram.status": "深度扫描完成 // 系统访问已授权",
       "settings.heatmap": "代码复杂度热力图",
       "settings.manualPilot": "手动飞行模式",
+      "settings.performanceMode": "性能模式 (省电)",
+      "settings.highQuality": "极致画质模式",
     },
   },
 };

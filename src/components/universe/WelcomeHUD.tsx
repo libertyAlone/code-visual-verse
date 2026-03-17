@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Rocket, MousePointer2, Move, ZoomIn, Info, ShieldCheck, Zap, Layers } from "lucide-react";
+import { Rocket, MousePointer2, Move, ZoomIn, Info, Sparkles, Thermometer, Zap, Layers } from "lucide-react";
 import { useStore } from "../../store/useStore";
 
 export const WelcomeHUD = () => {
@@ -10,7 +10,8 @@ export const WelcomeHUD = () => {
   const features = [
     { icon: <Layers size={18} />, text: t('app.welcome.feature.mapping') },
     { icon: <Zap size={18} />, text: t('app.welcome.feature.telemetry') },
-    { icon: <ShieldCheck size={18} />, text: t('app.welcome.feature.navigation') },
+    { icon: <Sparkles size={18} />, text: t('app.welcome.feature.ai') },
+    { icon: <Thermometer size={18} />, text: t('app.welcome.feature.diagnostics') },
   ];
 
   const controls = [
