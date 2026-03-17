@@ -35,7 +35,7 @@ export const WelcomeHUD = () => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] font-mono tracking-[0.3em] uppercase mb-4"
+            className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[12px] font-mono tracking-[0.3em] uppercase mb-4"
           >
             <Info size={12} />
             {t("welcome.guide_ready")}
@@ -68,7 +68,7 @@ export const WelcomeHUD = () => {
         {/* Interaction Guide */}
         <div className="space-y-6 pt-6 border-t border-white/10">
           <div className="flex items-center justify-between">
-            <h2 className="text-[10px] font-black text-white/40 uppercase tracking-[0.4em] font-mono">
+            <h2 className="text-[12px] font-black text-white/40 uppercase tracking-[0.4em] font-mono">
               {t('app.welcome.controls.title')}
             </h2>
             <div className="h-px flex-1 bg-white/5 mx-4" />
@@ -79,9 +79,9 @@ export const WelcomeHUD = () => {
               <div key={i} className="space-y-2">
                 <div className="flex items-center gap-2 text-zinc-500">
                   {c.icon}
-                  <span className="text-[10px] uppercase tracking-wider">{c.label}</span>
+                  <span className="text-[12px] uppercase tracking-wider">{c.label}</span>
                 </div>
-                <div className="text-[11px] font-mono text-cyan-400/80 bg-cyan-500/5 py-1 px-2 border border-cyan-500/10 inline-block">
+                <div className="text-[13px] font-mono text-cyan-400/80 bg-cyan-500/5 py-1 px-2 border border-cyan-500/10 inline-block">
                   {c.key}
                 </div>
               </div>
@@ -91,7 +91,7 @@ export const WelcomeHUD = () => {
 
         {/* Action Prompt */}
         <div className="text-center pt-4">
-          <div className="text-[11px] font-mono text-cyan-500 animate-pulse tracking-[0.4em] uppercase">
+          <div className="text-[13px] font-mono text-cyan-500 animate-pulse tracking-[0.4em] uppercase">
             {t('app.welcome.import_guide')}
           </div>
         </div>

@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Testing
+coverage/
+
+# Tauri
+src-tauri/target/
+src-tauri/bin/
+src-tauri/gen/
+

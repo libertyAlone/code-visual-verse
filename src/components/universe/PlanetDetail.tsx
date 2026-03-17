@@ -57,7 +57,7 @@ export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailPro
             className="group flex items-center gap-3 text-zinc-500 hover:text-white transition-all px-4 py-2 border border-white/5 hover:border-cyan-500/50 hover:bg-cyan-500/5"
           >
             <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-[0.4em]">{t("detail.back")}</span>
+            <span className="text-[12px] font-black uppercase tracking-[0.4em]">{t("detail.back")}</span>
           </button>
         </div>
 
@@ -66,7 +66,7 @@ export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailPro
                 <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
                 <h2 className="text-xl font-bold tracking-tight text-white uppercase">{node.name}</h2>
             </div>
-            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest truncate">{node.path}</span>
+            <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-widest truncate">{node.path}</span>
         </div>
 
         <GitLogsView 
@@ -79,7 +79,7 @@ export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailPro
         <div className="p-8 border-t border-white/10 bg-black/80 backdrop-blur-3xl shrink-0 pl-12">
             <div className="flex items-center gap-3 italic">
                 <Cpu size={20} className="text-cyan-500/50" />
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.6em]">{t('detail.integratedArchive')}</span>
+                <span className="text-[12px] font-mono text-zinc-500 uppercase tracking-[0.6em]">{t('detail.integratedArchive')}</span>
             </div>
         </div>
       </div>
@@ -90,17 +90,17 @@ export const PlanetDetail = ({ node, allNodes, onBack, onJump }: PlanetDetailPro
         <div className="h-16 border-b border-white/10 flex items-center justify-between px-10 bg-black/40 shrink-0">
             <div className="flex items-center gap-10">
                 <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-cyan-500 uppercase tracking-[0.3em]">{t('detail.telemetry')}</span>
-                    <span className="text-[10px] font-mono text-zinc-400">{node.path}</span>
+                    <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em]">{t('detail.telemetry')}</span>
+                    <span className="text-[12px] font-mono text-zinc-400">{node.path}</span>
                 </div>
             </div>
             <div className="flex gap-8">
                 <div className="text-right">
-                    <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">{t('detail.logicClusters')}</span>
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('detail.logicClusters')}</span>
                     <p className="text-base font-mono text-white leading-none">{node.functions?.length || 0}</p>
                 </div>
                 <div className="text-right">
-                    <span className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest">{t('detail.synchronization')}</span>
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{t('detail.synchronization')}</span>
                     <p className="text-base font-mono text-cyan-500 leading-none">100%</p>
                 </div>
             </div>

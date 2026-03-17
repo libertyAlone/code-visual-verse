@@ -23,9 +23,10 @@ export const GitLogsView = ({
             <div className="px-10 py-6 border-b border-white/5 bg-white/2 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <History size={16} className="text-cyan-400" />
-                    <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">{t('detail.gitLog')}</h3>
+                    <h2 className="text-[12px] font-black text-white/40 uppercase tracking-[0.4em] font-mono">
+{t('detail.gitLog')}</h2>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500 bg-black/40 px-2 py-0.5 border border-white/5">{logs.length}</span>
+                <span className="text-[12px] font-mono text-zinc-500 bg-black/40 px-2 py-0.5 border border-white/5">{logs.length}</span>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
@@ -47,22 +48,22 @@ export const GitLogsView = ({
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
-                                     <span className="text-[10px] font-mono text-cyan-500 font-bold group-hover:text-cyan-400">
+                                     <span className="text-[12px] font-mono text-cyan-500 font-bold group-hover:text-cyan-400">
 #{log.hash.substring(0, 8)}</span>
                                     {log.branches && (
-                                         <div className="flex items-center gap-1.5 px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-[8px] text-cyan-400/70 font-bold max-w-[140px]">
+                                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[12px] font-mono tracking-[0.3em] uppercase max-w-[140px]">
                                             <GitBranch size={10} />
-                                            <span className="truncate uppercase tracking-wider">{log.branches.replace(/[()]/g, '')}</span>
+                                            <span className="text-[12px] uppercase tracking-wider">{log.branches.replace(/[()]/g, '')}</span>
                                         </div>
                                     )}
                                 </div>
-                                <span className="text-[10px] text-zinc-600 font-mono italic">{log.date}</span>
+                                <span className="text-[12px] text-zinc-600 font-mono italic">{log.date}</span>
                             </div>
-                             <p className="text-[10px] text-zinc-300 font-medium line-clamp-2 leading-relaxed group-hover:text-cyan-50 transition-colors">
+                             <p className="text-[12px] text-zinc-300 font-medium line-clamp-2 leading-relaxed group-hover:text-cyan-50 transition-colors">
                                 {log.message}
                             </p>
                             <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                 <span className="text-zinc-500 text-[9px] font-mono uppercase tracking-[0.2em]">{log.author}</span>
+                                 <span className="text-zinc-500 text-[11px] font-mono uppercase tracking-[0.2em]">{log.author}</span>
                                 <div className="w-1.5 h-1.5 bg-cyan-600/50" />
                             </div>
                         </div>

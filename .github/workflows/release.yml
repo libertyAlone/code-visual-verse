@@ -19,7 +19,11 @@ jobs:
           - platform: 'windows-latest'
             args: '--target x86_64-pc-windows-msvc'
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: '--target x86_64-apple-darwin'
+            name: 'macOS Intel'
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            name: 'macOS Apple Silicon'
 
     runs-on: ${{ matrix.platform }}
     env:
@@ -53,17 +57,92 @@ jobs:
         id: changelog
         shell: bash
         run: |
+          # Get version from tag or use 'Nightly'
           if [ "${{ github.ref_type }}" = "tag" ]; then
+            VERSION="${{ github.ref_name }}"
             PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [ -z "$PREV_TAG" ]; then
-              git log --oneline -n 20 > CHANGELOG.txt
+              COMMITS=$(git log --pretty=format:"%s" -n 30)
             else
-              git log $PREV_TAG..HEAD --oneline > CHANGELOG.txt
+              COMMITS=$(git log $PREV_TAG..HEAD --pretty=format:"%s")
             fi
           else
-            git log --oneline -n 10 > CHANGELOG.txt
+            VERSION="Nightly"
+            COMMITS=$(git log --pretty=format:"%s" -n 10)
           fi
-          # Using GITHUB_OUTPUT for multi-line step output
+
+          # Function to categorize commits
+          categorize_commits() {
+            local pattern="$1"
+            echo "$COMMITS" | grep -iE "$pattern" | sed 's/^/- /' || true
+          }
+
+          # Build changelog
+          {
+            echo "## 本次更新"
+            echo ""
+
+            # Features
+            FEATURES=$(echo "$COMMITS" | grep -iE "^feat|^feature" | sed 's/^/- /')
+            if [ -n "$FEATURES" ]; then
+              echo "### ✨ 新功能"
+              echo "$FEATURES"
+              echo ""
+            fi
+
+            # Fixes
+            FIXES=$(echo "$COMMITS" | grep -iE "^fix|^bugfix" | sed 's/^/- /')
+            if [ -n "$FIXES" ]; then
+              echo "### 🐛 修复"
+              echo "$FIXES"
+              echo ""
+            fi
+
+            # Improvements
+            IMPROVEMENTS=$(echo "$COMMITS" | grep -iE "^improve|^perf|^refactor" | sed 's/^/- /')
+            if [ -n "$IMPROVEMENTS" ]; then
+              echo "### 🚀 优化"
+              echo "$IMPROVEMENTS"
+              echo ""
+            fi
+
+            # Documentation
+            DOCS=$(echo "$COMMITS" | grep -iE "^doc|^docs" | sed 's/^/- /')
+            if [ -n "$DOCS" ]; then
+              echo "### 📚 文档"
+              echo "$DOCS"
+              echo ""
+            fi
+
+            # Other commits (not matching above)
+            OTHER=$(echo "$COMMITS" | grep -ivE "^feat|^feature|^fix|^bugfix|^improve|^perf|^refactor|^doc|^docs|^ci|^build|^chore|^test" | sed 's/^/- /')
+            if [ -n "$OTHER" ]; then
+              echo "### 📝 其他"
+              echo "$OTHER"
+              echo ""
+            fi
+
+            echo "---"
+            echo ""
+            echo "## 📦 发布文件介绍"
+            echo ""
+            echo "| 文件名 | 说明 | 适用平台 |"
+            echo "|--------|------|----------|"
+            echo "| CodeVisualVerse_*_x64-setup.exe | Windows 安装包 | Windows 10/11 (x64) |"
+            echo "| CodeVisualVerse_*_x86_64.dmg | macOS Intel 安装包 | macOS 11.0+ (Intel) |"
+            echo "| CodeVisualVerse_*_aarch64.dmg | macOS Apple Silicon 安装包 | macOS 11.0+ (M1/M2/M3) |"
+            echo ""
+            echo "---"
+            echo ""
+            echo "## ⚠️ 特别注意"
+            echo ""
+            echo "- 首次使用建议备份重要项目文件"
+            echo "- macOS 用户请根据芯片类型选择对应安装包"
+            echo "- 如遇问题请在 GitHub Issues 反馈"
+            echo ""
+          } > CHANGELOG.txt
+
+          # Output for GitHub Actions
           echo "content<<EOF" >> $GITHUB_OUTPUT
           cat CHANGELOG.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -76,9 +155,8 @@ jobs:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
           releaseName: ${{ github.ref_type == 'tag' && github.ref_name || 'CodeVisualVerse Nightly' }}
           releaseBody: |
-            ## 🌌 ChangeLog / 更新日志
             ${{ steps.changelog.outputs.content }}
-            
+
             ---
             *Built automatically by GitHub Actions.*
           releaseDraft: ${{ github.ref_type == 'tag' }}

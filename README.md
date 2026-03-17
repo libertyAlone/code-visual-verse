@@ -1,83 +1,68 @@
-# CodeVisualVerse - 🌌 代码视觉宇宙
+# CodeVisualVerse - 🌌 Code Visual Universe
 
-需求：将代码库转化为可沉浸、可感知、可漫游的 3D 视觉宇宙。
+[中文版](./README_ZH.md)
+
+**Requirement**: Transform codebases into an immersive, perceptible, and navigable 3D visual universe.
 
 [![Tauri](https://img.shields.io/badge/Tauri-2.0+-blue.svg)](https://tauri.app/)
 [![Three.js](https://img.shields.io/badge/Three.js-r150+-green.svg)](https://threejs.org/)
 [![React](https://img.shields.io/badge/React-19+-cyan.svg)](https://reactjs.org/)
 
-> **CodeVisualVerse** 是一款专为开发者打造的代码可视化探索工具。它超越了传统的平面文件树，将复杂的项目架构重构为壮丽的星系系统。在这里，代码不再是冰冷的文本，而是拥有生命力、可感知的视觉资产。
+> **CodeVisualVerse** is a code exploration tool designed for developers. It transcends the traditional flat file tree, reconstructing complex project architectures into magnificent galaxy systems. Here, code is no longer cold text, but a living, perceptible visual asset.
 
 ---
 
-## 🌟 核心亮点
+## 🌟 Key Features
 
-### 1. 🪐 直觉式天体建模
-*   **代码星球 (Planets)**：每个源文件都是一颗星球。球体大小映射文件体积（Lines of Code）。
-*   **星系系统 (Star Systems)**：目录结构被可视化为分层嵌套的星系，每一级目录都是一个引力中心，汇聚属于它的天体。
-*   **星际轨道 (Import Links)**：文件间的依赖关系通过流光溢彩的能量束（Energy Beams）进行可视化连接。
+### 1. 🪐 Intuitive Astral Modeling
+*   **Code Planets**: Each source file is a planet. Sphere size maps to the file's mass (Lines of Code).
+*   **Star Systems**: The directory structure is visualized as hierarchically nested galaxies. Each directory level is a gravitational center gathering its celestial bodies.
+*   **Orbital Linkages**: Dependency relationships are visualized via radiant energy beams connecting the planets.
 
-### 2. 🧪 视觉化度量衡 (Visual Metrics)
-无需阅读代码，即可凭直觉进行代码审计：
-*   **活跃度 (Activity)**：对接 Git 提交数据。星球的 **自发光强度 (Glow)** 和 **旋转速度** 代表了代码的活跃频率，光芒越盛，变动越频。
-*   **复杂度 (Complexity)**：星球表面的 **畸变扭曲 (Distortion)** 和 **颜色偏移 (向红/暗偏移)** 代表了逻辑复杂度。扭曲越剧烈，代表该文件越难以维护。
+### 2. 🧬 Holographic Code Projection
+*   **Real-time HUD**: Clicking a planet summons a **3D Holographic Panel** floating above it, allowing you to preview source code directly within the spatial environment.
+*   **Scanning Animation**: Features sci-fi laser scan lines and HUD telemetry data for ultimate cyber-immersion.
+*   **Adaptive Scaling**: The holographic panel automatically adjusts its scale based on the camera distance, ensuring text remains legible from any range.
 
-### 3. 🚀 沉浸式导航感
-*   **星际跳跃 (Stellar Jump)**：在查看代码详情时，点击任何 `import` 路径，视角将丝滑地飞向目标星球，实现跨星系的无缝切换。
-*   **交互引力源 (Galaxy Hubs)**：点击蓝色的全息文件夹中心节点，可快速获取该目录的代码量分布与全系统计报告。
-*   ** README 百科全书**：进入星系时，会自动播放该区域的 `README.md` 全息投影，作为空间“欢迎广播”。
+### 3. 🧪 Visual Metrics
+Audit code intuitively without reading a single line:
+*   **Activity**: Integrated with Git telemetry. A planet's **Glow intensity** and **Rotation speed** represent commit frequency. The brighter it shines, the more active the code.
+*   **Complexity**: Surface **distortion and color shifts** represent logical complexity. The more chaotic the distortion, the harder the file is to maintain.
 
-### 4. 🎬 电影级演示模式
-*   **自动巡航 (Tour Mode)**：开启“自动驾驶”模式，系统将带领你以电影视点自动遍历项目的重要节点，完美适配项目演示或动态壁纸需求。
-*   **极致美学**：内置后期处理链（Bloom, Sparkles, Stars），提供极致的视觉冲击力。
-
----
-
-## 🎮 交互指南
-
-*   **滚轮缩放**：穿越星云，进入或离开微观代码世界。
-*   **鼠标拖拽**：旋转视角，观察项目架构的宏观布局。
-*   **左键点击**：选中星球或文件夹节点，唤起侧边栏的深度遥测面板（包含代码详情与 Git 溯源）。
-*   **星际跳跃**：详情页点击高亮路径，触发实时飞行交互。
+### 4. 🛰️ Immersive Navigation
+*   **Stellar Jump**: While viewing code details, clicking any `import` path will smoothly warp the camera to the target planet, enabling seamless cross-galaxy transitions.
+*   **Evolution Timeline**: Backtrack through Git history to witness the code universe evolve from a single star into a vast cluster.
+*   **README Holo-Broadcasts**: Entering a system triggers an automatic holographic playback of its `README.md` as a spatial welcome broadcast.
 
 ---
 
-## 🛠 技术栈
+## 🎮 Interface Guide
 
-*   **三维渲染**: React 19 + Three.js + React-Three-Fiber + Drei
-*   **桌面封装**: Tauri v2 (Rust)
-*   **数据采集**: Git CLI + AST 分析
-*   **多语言**: i18next (支持中英双语)
-*   **样式**: Tailwind CSS (Vanilla CSS 核心)
-
----
-
-## 🚀 开发部署
-
-```bash
-# 安装依赖
-pnpm install
-
-# 启动开发环境
-pnpm tauri dev
-```
+*   **Scroll Wheel**: Warp through nebulae to enter or leave the microscopic code world.
+*   **Left Click**: Select planets or directory nodes to invoke holographic projections and deep telemetry panels.
+*   **Keyboard Controls**: Use Arrow keys in "Evolution Mode" to traverse through commits instantly.
+*   **Tour Mode**: Engage the "Cinematic Autopilot" to let the system guide you through the architecture's highlights automatically.
 
 ---
 
-## 🔒 隐私声明
+## 🛠 Tech Stack
 
-**CodeVisualVerse 完全在本地运行。**
-所有代码扫描、Git 数据读取均在你的本地环境中完成。我们不上传任何代码到云端，保护你的项目隐私是我们的核心设计准则。
+*   **3D Rendering**: React 19 + Three.js + React-Three-Fiber + Drei
+*   **Desktop Engine**: Tauri v2 (Rust)
+*   **Data Aggregation**: Git CLI + AST Analysis
+*   **Localization**: i18next (Full support for English & Chinese)
+*   **Styling**: Tailwind CSS
 
 ---
 
-## 📄 许可证
+## 🔒 Privacy First
 
-[![License: PolyForm-Noncommercial](https://img.shields.io/badge/License-PolyForm--Noncommercial-blue.svg)](LICENSE)
+**CodeVisualVerse runs entirely locally.**
+All code scanning and Git data processing occur within your local environment. No code is ever uploaded to the cloud—protecting your project privacy is our core design principle.
 
-本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。
+---
 
-- ✅ 允许个人学习、研究、非商业用途使用
-- ✅ 允许修改和分发
-- ❌ 禁止商业用途
-- 📧 商业授权请联系项目维护者
+## 📄 License
+
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+📧 For commercial licensing, please contact the project maintainers.

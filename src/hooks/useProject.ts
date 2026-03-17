@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { processFile } from "../lib/ast-processor";
@@ -10,10 +11,11 @@ export const useProject = () => {
         setProjectPath, 
         setSelectedNode,
         onlySrc,
-        maxDepth 
+        maxDepth,
+        setBirthTimes
     } = useStore();
 
-    const handleImport = async () => {
+    const handleImport = useCallback(async () => {
         try {
             const selected = await open({
                 directory: true,
@@ -25,11 +27,16 @@ export const useProject = () => {
                 setLoading(true);
                 setNodes([]);
                 try {
+                    const { ignoreDotFiles, ignoreGitIgnore } = useStore.getState();
+                    console.log("Invoking scan_project with path:", selected);
                     const files: ProjectFile[] = await invoke("scan_project", {
                         path: selected,
                         onlySrc,
                         maxDepth,
+                        ignoreDotFiles,
+                        ignoreGitignore: ignoreGitIgnore,
                     });
+                    console.log("Scan result:", files?.length, "files found");
 
                     if (!Array.isArray(files)) {
                         console.error("Invalid response from scan_project:", files);
@@ -85,6 +92,35 @@ export const useProject = () => {
                     }
 
                     setNodes(enrichedFiles);
+
+                    try {
+                        const birthTimes: Record<string, number> = await invoke("get_all_files_birth_times", {
+                            path: selected as string
+                        });
+                        setBirthTimes(birthTimes);
+                        
+                        const normRoot = (selected as string).replace(/\\/g, '/').toLowerCase();
+                        
+                        setNodes(enrichedFiles.map(node => {
+                            const currentPath = node.path.replace(/\\/g, '/');
+                            const currentNormPath = currentPath.toLowerCase();
+                            
+                            let key = currentPath;
+                            if (currentNormPath.startsWith(normRoot)) {
+                                key = currentPath.substring(normRoot.length).replace(/^[/\\]+/, '');
+                            }
+                            
+                            // Try both original and lowercase for birthTimes lookup, fallback to filesystem created_at
+                            const bTime = birthTimes[key] || birthTimes[key.toLowerCase()] || node.created_at || 0;
+                            
+                            return {
+                                ...node,
+                                birthTime: Number(bTime)
+                            };
+                        }));
+                    } catch (e) {
+                        console.warn("Failed to fetch Git birth times:", e);
+                    }
                 } catch (error) {
                     console.error("Import failed:", error);
                     setNodes([]);
@@ -96,9 +132,15 @@ export const useProject = () => {
             console.error("Import dialog failed:", e);
             setLoading(false);
         }
-    };
+    }, [onlySrc, maxDepth, setNodes, setLoading, setProjectPath, setBirthTimes]);
 
-    const handleSelectNode = async (node: ProjectFile) => {
+    const handleSelectNode = useCallback(async (node: ProjectFile) => {
+        const { selectedNode } = useStore.getState();
+        if (selectedNode?.path === node.path) {
+            setSelectedNode(null);
+            return;
+        }
+
         if (node.is_dir) return;
 
         if (node.functions) {
@@ -129,7 +171,7 @@ export const useProject = () => {
             console.error("Failed to parse file:", e);
             setSelectedNode(node);
         }
-    };
+    }, [setNodes, setSelectedNode]);
 
     return {
         handleImport,

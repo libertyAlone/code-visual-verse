@@ -1,4 +1,7 @@
 mod commands;
+#[cfg(test)]
+mod commands_test;
+
 use tauri::menu::{Menu, Submenu, MenuItem};
 use tauri::Emitter;
 
@@ -49,8 +52,14 @@ pub fn run() {
             commands::scan_project, 
             commands::read_file,
             commands::get_git_log,
+            commands::get_project_git_history,
+            commands::get_commit_files,
+            commands::get_all_files_birth_times,
             commands::get_git_blame,
-            commands::get_git_diff
+            commands::get_git_diff,
+            commands::load_app_config,
+            commands::save_app_config,
+            commands::ai_chat
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

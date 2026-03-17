@@ -97,7 +97,7 @@ export const CodeViewer = ({
                     onMouseLeave={() => setHoveredHash(null)}
                 >
                     {/* Blame Gutter */}
-                    <div className="flex shrink-0 font-mono text-[10px] border-r border-white/5 bg-black/20 select-none">
+                    <div className="flex shrink-0 font-mono text-[12px] border-r border-white/5 bg-black/20 select-none">
                         <div className="w-10 flex items-center justify-center text-zinc-700 border-r border-white/5 opacity-40">{i + 1}</div>
                         <div 
                             className={`w-[100px] flex items-center px-4 cursor-pointer transition-colors ${isHovered ? 'text-cyan-400 font-bold' : 'text-zinc-600'}`}
@@ -142,7 +142,7 @@ export const CodeViewer = ({
             ) : (
                 <div className="h-full flex flex-col items-center justify-center gap-6 opacity-20 pt-40">
                     <Code2 size={48} />
-                    <span className="text-[13px] uppercase tracking-[0.3em] font-black">{t('detail.initBuffer')}</span>    
+                    <span className="text-[14px] uppercase tracking-[0.3em] font-black">{t('detail.initBuffer')}</span>    
                 </div>
             )}
         </div>

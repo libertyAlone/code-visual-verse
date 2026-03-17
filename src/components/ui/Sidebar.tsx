@@ -12,7 +12,8 @@ import {
     ZoomIn, 
     FileText,
     Activity,
-    Search
+    Search,
+    Sparkles
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { useStore, ProjectFile } from "../../store/useStore";
@@ -30,13 +31,19 @@ export const Sidebar = () => {
         loading,
         selectedNode,
         onlySrc,
+        ignoreDotFiles,
+        ignoreGitIgnore,
         maxDepth,
         searchQuery,
         setOnlySrc,
+        setIgnoreDotFiles,
+        setIgnoreGitIgnore,
         setMaxDepth,
         setSearchQuery,
         setShowDetail,
         setFocusTarget,
+        setIsAIChatOpen,
+        setIsAISettingsModalOpen,
     } = useStore();
 
     const formatDate = (timestamp: number) => {
@@ -73,7 +80,7 @@ export const Sidebar = () => {
                             <h1 className="text-lg font-black text-white tracking-[0.2em] uppercase leading-none">
                                 {t("app.title")}
                             </h1>
-                            <p className="text-[9px] font-bold text-cyan-500/60 uppercase tracking-widest mt-1">
+                            <p className="text-[11px] font-bold text-cyan-500/60 uppercase tracking-widest mt-1">
                                 {t("app.subtitle")}
                             </p>
                         </div>
@@ -103,7 +110,7 @@ export const Sidebar = () => {
                                     </h4>
 
                                     <div className="space-y-4">
-                                        <label className="flex justify-between items-center text-[9px] font-black text-zinc-300 uppercase tracking-[0.2em]">
+                                        <label className="flex justify-between items-center text-[11px] font-black text-zinc-300 uppercase tracking-[0.2em]">
                                             {t("settings.depth")}
                                             <span className="text-cyan-400 font-mono text-sm">
                                                 {maxDepth}
@@ -119,9 +126,9 @@ export const Sidebar = () => {
                                                 onChange={(e) => setMaxDepth(parseInt(e.target.value))}
                                                 className="w-full h-1 bg-white/5 appearance-none cursor-pointer accent-cyan-500"
                                             />
-                                            <div className="flex justify-between mt-2 text-[8px] font-mono text-zinc-500 uppercase tracking-widest">
-                                                <span>Lv.1</span>
-                                                <span>Lv.5</span>
+                                            <div className="flex justify-between mt-2 text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                                                <span>{t("sidebar.level", { level: 1 })}</span>
+                                                <span>{t("sidebar.level", { level: 5 })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -129,12 +136,25 @@ export const Sidebar = () => {
                                     <div className="pt-4 border-t border-white/5">
                                         <button 
                                             onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-                                            className="w-full text-left text-[10px] font-black text-zinc-400 hover:text-white transition-colors flex justify-between items-center uppercase tracking-[0.3em]"
+                                            className="w-full text-left text-[12px] font-black text-zinc-400 hover:text-white transition-colors flex justify-between items-center uppercase tracking-[0.3em]"
                                         >
                                             {t("settings.lang")}
-                                            <span className="text-cyan-400 bg-cyan-500/10 px-2 py-0.5 border border-cyan-500/20 text-[9px]">
-                                                {i18n.language === "zh" ? "中文" : "ENG"}
+                                            <span className="text-cyan-400 bg-cyan-500/10 px-2 py-0.5 border border-cyan-500/20 text-[12px]">
+                                                {i18n.language === "zh" ? t("settings.zh") : t("settings.en")}
                                             </span>
+                                        </button>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-white/5">
+                                        <button 
+                                            onClick={() => setIsAISettingsModalOpen(true)}
+                                            className="w-full text-left text-[12px] font-black text-cyan-400 hover:text-white transition-colors flex justify-between items-center uppercase tracking-[0.3em] group/ai"
+                                        >
+                                            {t("ai.settings_title")}
+                                            <div className="flex items-center gap-2">
+                                                <Sparkles size={12} className="text-cyan-500 group-hover/ai:animate-pulse" />
+                                                <ChevronRight size={12} className="text-cyan-700" />
+                                            </div>
                                         </button>
                                     </div>
                                 </motion.div>
@@ -170,22 +190,85 @@ export const Sidebar = () => {
                         <div className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-cyan-500/50 to-transparent translate-y-full group-hover:translate-y-0 transition-transform" />
                     </button>
 
-                    <div 
-                        onClick={() => setOnlySrc(!onlySrc)}
-                        className="flex items-center gap-4 p-3.5 bg-white/2 border border-white/5 group hover:border-cyan-500/30 transition-all cursor-pointer"
-                    >
-                        <div className={`shrink-0 w-8 h-8 flex items-center justify-center border transition-all ${onlySrc ? 'bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'bg-white/5 border-white/10'}`}>
-                            <div className={`w-2 h-2 transition-transform duration-300 ${onlySrc ? 'bg-cyan-400 scale-100' : 'bg-transparent scale-0'}`} />
+                    <div className="grid grid-cols-1 gap-2">
+                        <div 
+                            onClick={() => setOnlySrc(!onlySrc)}
+                            className="flex items-center gap-4 p-3.5 bg-white/2 border border-white/5 group hover:border-cyan-500/30 transition-all cursor-pointer"
+                        >
+                            <div className={`shrink-0 w-8 h-8 flex items-center justify-center border transition-all ${onlySrc ? 'bg-cyan-500/20 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'bg-white/5 border-white/10'}`}>
+                                <div className={`w-2 h-2 transition-transform duration-300 ${onlySrc ? 'bg-cyan-400 scale-100' : 'bg-transparent scale-0'}`} />
+                            </div>
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                                <span className="text-[12px] font-black text-zinc-300 uppercase tracking-widest group-hover:text-white transition-colors">
+                                    {t("app.onlySrc")}
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-tighter truncate opacity-60">
+                                    {t("sidebar.filter_desc")}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-0.5 min-w-0">
-                            <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest group-hover:text-white transition-colors">
-                                {t("app.onlySrc")}
-                            </span>
-                            <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-tighter truncate opacity-60">
-                                {t("sidebar.filter_desc")}
-                            </span>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <div 
+                                onClick={() => setIgnoreDotFiles(!ignoreDotFiles)}
+                                className="flex items-center gap-3 p-3 bg-white/2 border border-white/5 group hover:border-cyan-500/30 transition-all cursor-pointer"
+                            >
+                                <div className={`shrink-0 w-6 h-6 flex items-center justify-center border transition-all ${ignoreDotFiles ? 'bg-cyan-500/20 border-cyan-500/50' : 'bg-white/5 border-white/10'}`}>
+                                    <div className={`w-1.5 h-1.5 transition-transform duration-300 ${ignoreDotFiles ? 'bg-cyan-400 scale-100' : 'bg-transparent scale-0'}`} />
+                                </div>
+                                <div className="flex flex-col gap-0 min-w-0">
+                                    <span className="text-[11px] font-black text-zinc-300 uppercase tracking-widest group-hover:text-white transition-colors truncate">
+                                        {t("app.ignoreDotFiles")}
+                                    </span>
+                                    <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-tighter truncate opacity-60">
+                                        {t("sidebar.ignoreDotFiles_desc")}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div 
+                                onClick={() => setIgnoreGitIgnore(!ignoreGitIgnore)}
+                                className="flex items-center gap-3 p-3 bg-white/2 border border-white/5 group hover:border-cyan-500/30 transition-all cursor-pointer"
+                            >
+                                <div className={`shrink-0 w-6 h-6 flex items-center justify-center border transition-all ${ignoreGitIgnore ? 'bg-cyan-500/20 border-cyan-500/50' : 'bg-white/5 border-white/10'}`}>
+                                    <div className={`w-1.5 h-1.5 transition-transform duration-300 ${ignoreGitIgnore ? 'bg-cyan-400 scale-100' : 'bg-transparent scale-0'}`} />
+                                </div>
+                                <div className="flex flex-col gap-0 min-w-0">
+                                    <span className="text-[11px] font-black text-zinc-300 uppercase tracking-widest group-hover:text-white transition-colors truncate">
+                                        {t("app.ignoreGitIgnore")}
+                                    </span>
+                                    <span className="text-[11px] font-mono text-zinc-500 uppercase tracking-tighter truncate opacity-60">
+                                        {t("sidebar.ignoreGitIgnore_desc")}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    {/* AI Assistant Button */}
+                    {nodes.length > 0 && (
+                        <button
+                            onClick={() => setIsAIChatOpen(true)}
+                            className="group relative w-full h-14 bg-linear-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/30 flex items-center px-5 hover:from-cyan-500/20 hover:to-blue-600/20 transition-all overflow-hidden"
+                        >
+                            <div className="flex items-center gap-4 relative z-10 w-full">
+                                <div className="w-9 h-9 flex items-center justify-center bg-cyan-500/20 group-hover:bg-cyan-500/40 transition-colors">
+                                    <Sparkles
+                                        className="text-cyan-400"
+                                        size={18}
+                                    />
+                                </div>
+                                <span className="text-[11px] font-black uppercase tracking-[0.2em] text-cyan-100 group-hover:text-white transition-colors flex-1 text-left">
+                                    {t("sidebar.ai_assistant")}
+                                </span>
+                                <ChevronRight
+                                    size={14}
+                                    className="text-cyan-500 group-hover:text-cyan-400 transition-all group-hover:translate-x-1"
+                                />
+                            </div>
+                            <div className="absolute inset-x-0 bottom-0 h-[2px] bg-linear-to-r from-transparent via-cyan-400 to-transparent" />
+                        </button>
+                    )}
 
                     {nodes.length > 0 && (
                         <div className="space-y-3 pt-4 border-t border-white/5">
@@ -194,7 +277,7 @@ export const Sidebar = () => {
                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <FolderOpen size={20} />
                                     </div>
-                                    <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">
+                                    <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">
                                         {t("summary.galaxies")}
                                     </p>
                                     <p className="text-xl font-mono text-white tracking-widest leading-none">
@@ -205,7 +288,7 @@ export const Sidebar = () => {
                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
                                         <Box size={20} />
                                     </div>
-                                    <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">
+                                    <p className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2">
                                         {t("summary.planets")}
                                     </p>
                                     <p className="text-xl font-mono text-cyan-400 tracking-widest leading-none">
@@ -271,7 +354,7 @@ export const Sidebar = () => {
                                                 <span className="text-[11px] font-bold text-white truncate">
                                                     {res.name}
                                                 </span>
-                                                <span className="text-[9px] font-mono text-zinc-400 truncate group-hover:text-cyan-400/70 transition-colors">
+                                                <span className="text-[10px] font-mono text-zinc-400 truncate group-hover:text-cyan-400/70 transition-colors">
                                                     {res.path}
                                                 </span>
                                             </button>
@@ -296,7 +379,7 @@ export const Sidebar = () => {
                                     <div className="w-20 h-20 border border-dashed border-zinc-700 flex items-center justify-center">
                                         <Box size={32} className="text-zinc-700" />
                                     </div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] leading-relaxed max-w-[200px]">
+                                    <p className="text-[12px] font-bold uppercase tracking-[0.3em] leading-relaxed max-w-[200px]">
                                         {t("app.emptyPrompt")}
                                     </p>
                                 </motion.div>
@@ -310,7 +393,7 @@ export const Sidebar = () => {
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-3">
                                             <Cpu className="text-cyan-400/60" size={14} />
-                                            <span className="text-[9px] uppercase font-black tracking-[0.3em] text-cyan-400/90">
+                                            <span className="text-[12px] uppercase font-black tracking-[0.3em] text-cyan-400/90">
                                                 {selectedNode.is_dir
                                                     ? t("node.systemCore")
                                                     : t("node.planetaryCore")}
@@ -331,7 +414,7 @@ export const Sidebar = () => {
                                                             }} 
                                                         />
                                                         <span 
-                                                            className="text-[9px] font-mono font-bold tracking-[0.2em] uppercase"
+                                                            className="text-[11px] font-mono font-bold tracking-[0.2em] uppercase"
                                                             style={{ 
                                                                 color: selectedNode.color || '#06b6d4' 
                                                             }}
@@ -352,7 +435,7 @@ export const Sidebar = () => {
                                             )}
                                         </div>
                                         <div className="flex gap-4">
-                                            <span className="px-3.5 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black tracking-widest text-zinc-300 uppercase">
+                                            <span className="px-3.5 py-1.5 bg-white/5 border border-white/10 text-[11px] font-black tracking-widest text-zinc-300 uppercase">
                                                 {selectedNode.is_dir
                                                     ? t("node.starSystem")
                                                     : t("node.planet")}
@@ -363,19 +446,19 @@ export const Sidebar = () => {
                                     {!selectedNode.is_dir && (
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="p-4 bg-white/3 border border-white/5">
-                                                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                                <p className="text-[12px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                                     <Zap size={12} className="text-amber-500/50" />{" "}
                                                     {t("node.mass")}
                                                 </p>
                                                 <p className="text-base font-mono text-white tracking-tighter">
                                                     {(selectedNode.size / 1024).toFixed(2)}{" "}
-                                                    <span className="text-[9px] text-zinc-500 font-bold">
+                                                    <span className="text-[11px] text-zinc-500 font-bold">
                                                         KB
                                                     </span>
                                                 </p>
                                             </div>
                                             <div className="p-4 bg-white/3 border border-white/5">
-                                                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                                <p className="text-[12px] font-black text-zinc-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                                     <Database size={12} className="text-purple-500/50" />{" "}
                                                     {t("node.complexity")}
                                                 </p>
@@ -389,30 +472,30 @@ export const Sidebar = () => {
                                     <div className="grid grid-cols-1 gap-4">
                                         <div className="p-4 bg-white/3 border border-white/5 group relative">
                                             <div className="flex justify-between items-start mb-1.5">
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">
+                                                <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">
                                                     {t("node.coordinates")}
                                                 </p>
                                                 <div className="w-1 h-3 bg-cyan-500/30 group-hover:bg-cyan-500 transition-colors" />
                                             </div>
-                                            <p className="text-[10px] font-mono text-white/90 break-all leading-relaxed pr-8">
+                                            <p className="text-[12px] font-mono text-white/90 break-all leading-relaxed pr-8">
                                                 {selectedNode.path}
                                             </p>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="p-4 bg-white/3 border border-white/5">
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
+                                                <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
                                                     {t("node.createdTime")}
                                                 </p>
-                                                <p className="text-[10px] font-mono text-zinc-300">
+                                                <p className="text-[12px] font-mono text-zinc-300">
                                                     {formatDate(selectedNode.created_at)}
                                                 </p>
                                             </div>
                                             <div className="p-4 bg-white/3 border border-white/5">
-                                                <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
+                                                <p className="text-[11px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">
                                                     {t("node.modifiedTime")}
                                                 </p>
-                                                <p className="text-[10px] font-mono text-zinc-300">
+                                                <p className="text-[12px] font-mono text-zinc-300">
                                                     {formatDate(selectedNode.modified_at)}
                                                 </p>
                                             </div>
@@ -429,11 +512,11 @@ export const Sidebar = () => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Activity size={12} className="text-cyan-500" />
-                            <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                            <span className="text-[12px] font-mono text-zinc-500 uppercase tracking-widest">
                                 {t("app.syncTime")}
                             </span>
                         </div>
-                        <span className="text-[9px] font-mono text-zinc-600 bg-zinc-950 px-2 py-1 border border-white/5">
+                        <span className="text-[12px] font-mono text-zinc-600 bg-zinc-950 px-2 py-1 border border-white/5">
                             {nodes.length} {t("app.celestials")}
                         </span>
                     </div>

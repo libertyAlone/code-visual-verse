@@ -11,6 +11,9 @@ import { LoadingOverlay } from "./components/ui/LoadingOverlay";
 import { useStore } from "./store/useStore";
 import { useProject } from "./hooks/useProject";
 import { useAppEvents } from "./hooks/useAppEvents";
+import { AIChatPage } from "./components/ai/AIChatPage";
+import { AISettings } from "./components/ai/AISettings";
+import { Timeline } from "./components/ui/Timeline";
 
 import { useTranslation } from "react-i18next";
 
@@ -31,6 +34,10 @@ function App() {
     maxDepth,
     projectPath,
     dirColors,
+    isAIChatOpen,
+    selectedCommitHash,
+    globalCommits,
+    showAllDependencies,
     setShowDetail,
     setFocusTarget,
     setDirColors,
@@ -61,6 +68,9 @@ function App() {
           <Universe
             nodes={nodes as any}
             selectedPath={selectedNode?.path ?? null}
+            selectedCommitHash={selectedCommitHash}
+            globalCommits={globalCommits}
+            showAllDependencies={showAllDependencies}
             onSelect={handleSelectNode as any}
             resetCounter={resetCounter}
             focusTarget={focusTarget}
@@ -81,8 +91,10 @@ function App() {
           </AnimatePresence>
         </div>
 
+
+
         {/* Directory Color Legend */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black/40 backdrop-blur-md px-6 py-3 border border-white/5 pointer-events-auto max-w-[80vw]">
+        <div className={`absolute left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-4 bg-black/40 backdrop-blur-md px-6 py-3 border border-white/5 pointer-events-auto max-w-[80vw] transition-all duration-500 ${selectedCommitHash ? 'bottom-32' : 'bottom-8'}`}>
           {dirColors.map((item, i) => (
             <button 
               key={i} 
@@ -111,7 +123,15 @@ function App() {
             {t("detail.system_status")}: {t("detail.status")}
           </p>
         </div>
+
+        <Timeline />
       </div>
+      
+      <AnimatePresence>
+        {isAIChatOpen && <AIChatPage />}
+      </AnimatePresence>
+
+      <AISettings />
     </div>
   );
 }
